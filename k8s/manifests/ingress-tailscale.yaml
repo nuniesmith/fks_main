@@ -1,0 +1,129 @@
+---
+# Ingress for Tailscale network access (100.116.135.8)
+# This ingress routes external traffic from Tailscale network to internal services
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fks-ingress-tailscale
+  namespace: fks-trading
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    # Client body size for file uploads
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # Timeouts for long-running requests (AI service)
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - fkstrading.xyz
+    - www.fkstrading.xyz
+    - api.fkstrading.xyz
+    - grafana.fkstrading.xyz
+    - prometheus.fkstrading.xyz
+    - alertmanager.fkstrading.xyz
+    - flower.fkstrading.xyz
+    secretName: fkstrading-tls
+  
+  rules:
+  # Django Web UI (main application)
+  - host: fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web
+            port:
+              number: 8000
+  
+  - host: www.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web
+            port:
+              number: 8000
+  
+  # API service
+  - host: api.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-api
+            port:
+              number: 8001
+  
+  # Grafana monitoring
+  - host: grafana.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000
+  
+  # Prometheus
+  - host: prometheus.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus
+            port:
+              number: 9090
+  
+  # Alertmanager
+  - host: alertmanager.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: alertmanager
+            port:
+              number: 9093
+  
+  # Flower (Celery monitoring)
+  - host: flower.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: flower
+            port:
+              number: 5555
+  
+  # Execution service webhooks
+  - host: execution.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-execution
+            port:
+              number: 8000

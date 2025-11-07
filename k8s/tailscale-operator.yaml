@@ -1,0 +1,144 @@
+# Tailscale Operator for Kubernetes
+# Provides stable Tailscale IP for the FKS Trading Platform
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailscale
+
+---
+# Apply Tailscale Operator
+# kubectl apply -f https://github.com/tailscale/tailscale/raw/main/cmd/k8s-operator/deploy/manifests/operator.yaml
+
+# After operator is running, create this connector
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tailscale-auth
+  namespace: fks-trading
+stringData:
+  # Get auth key from: https://login.tailscale.com/admin/settings/keys
+  # Create a reusable auth key with tags: tag:k8s
+  TS_AUTHKEY: "${TAILSCALE_AUTH_KEY}"  # Replace with your auth key
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale-connector
+  namespace: fks-trading
+  labels:
+    app: tailscale-connector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailscale-connector
+  template:
+    metadata:
+      labels:
+        app: tailscale-connector
+    spec:
+      serviceAccountName: tailscale-sa
+      initContainers:
+      - name: sysctler
+        image: busybox
+        securityContext:
+          privileged: true
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - sysctl -w net.ipv4.ip_forward=1 net.ipv6.conf.all.forwarding=1
+        resources:
+          requests:
+            cpu: 1m
+            memory: 1Mi
+      containers:
+      - name: tailscale
+        imagePullPolicy: Always
+        image: tailscale/tailscale:latest
+        env:
+        # Store state in k8s secret
+        - name: TS_KUBE_SECRET
+          value: "tailscale-state"
+        - name: TS_USERSPACE
+          value: "false"
+        - name: TS_AUTH_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tailscale-auth
+              key: TS_AUTHKEY
+        # Expose Kubernetes ingress to Tailscale network
+        - name: TS_DEST_IP
+          value: "192.168.49.2"  # minikube IP, change for production
+        - name: TS_ROUTES
+          value: "10.244.0.0/16"  # Kubernetes pod network
+        - name: TS_EXTRA_ARGS
+          value: "--advertise-tags=tag:k8s --hostname=fks-trading-k8s"
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tailscale-sa
+  namespace: fks-trading
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tailscale-role
+  namespace: fks-trading
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tailscale-rolebinding
+  namespace: fks-trading
+subjects:
+- kind: ServiceAccount
+  name: tailscale-sa
+roleRef:
+  kind: Role
+  name: tailscale-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# LoadBalancer Service using Tailscale IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: fks-tailscale-ingress
+  namespace: fks-trading
+  annotations:
+    tailscale.com/expose: "true"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 443
+    protocol: TCP

@@ -1,0 +1,28 @@
+{{- if .Values.fks_execution.verticalPodAutoscaler.enabled }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: fks-execution-vpa
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: fks-execution
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: fks-execution
+  updatePolicy:
+    updateMode: {{ .Values.fks_execution.verticalPodAutoscaler.updateMode }}
+  resourcePolicy:
+    containerPolicies:
+    - containerName: fks-execution
+      minAllowed:
+        cpu: {{ .Values.fks_execution.verticalPodAutoscaler.minAllowed.cpu }}
+        memory: {{ .Values.fks_execution.verticalPodAutoscaler.minAllowed.memory }}
+      maxAllowed:
+        cpu: {{ .Values.fks_execution.verticalPodAutoscaler.maxAllowed.cpu }}
+        memory: {{ .Values.fks_execution.verticalPodAutoscaler.maxAllowed.memory }}
+      controlledResources:
+      - cpu
+      - memory
+{{- end }}

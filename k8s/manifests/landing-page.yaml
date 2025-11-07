@@ -1,0 +1,222 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-page-html
+  namespace: fks-trading
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>FKS Trading Platform</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .container {
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                padding: 50px;
+                max-width: 800px;
+                width: 100%;
+            }
+            h1 {
+                color: #667eea;
+                font-size: 2.5em;
+                margin-bottom: 10px;
+            }
+            .subtitle {
+                color: #666;
+                font-size: 1.1em;
+                margin-bottom: 30px;
+            }
+            .status {
+                background: #e8f5e9;
+                border-left: 4px solid #4caf50;
+                padding: 15px;
+                margin-bottom: 30px;
+                border-radius: 5px;
+            }
+            .status h2 {
+                color: #2e7d32;
+                font-size: 1.2em;
+                margin-bottom: 10px;
+            }
+            .services {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin-top: 30px;
+            }
+            .service-card {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 10px;
+                text-decoration: none;
+                color: inherit;
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+            }
+            .service-card:hover {
+                background: #667eea;
+                color: white;
+                border-color: #764ba2;
+                transform: translateY(-5px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            }
+            .service-card h3 {
+                font-size: 1.2em;
+                margin-bottom: 5px;
+            }
+            .service-card p {
+                font-size: 0.9em;
+                opacity: 0.8;
+            }
+            .badge {
+                display: inline-block;
+                background: #4caf50;
+                color: white;
+                padding: 5px 10px;
+                border-radius: 15px;
+                font-size: 0.8em;
+                margin-left: 10px;
+            }
+            .warning {
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+                padding: 15px;
+                margin-top: 20px;
+                border-radius: 5px;
+            }
+            .code {
+                background: #f5f5f5;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-family: monospace;
+                font-size: 0.9em;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 FKS Trading Platform</h1>
+            <p class="subtitle">Bitcoin-First AI-Driven Trading System</p>
+            
+            <div class="status">
+                <h2>✅ System Status: Operational</h2>
+                <p><strong>12/14 services running (86%)</strong> - Backend infrastructure fully operational</p>
+                <p style="margin-top: 10px;">
+                    <span class="code">PostgreSQL</span>
+                    <span class="code">Redis</span>
+                    <span class="code">API</span>
+                    <span class="code">Data</span>
+                    <span class="code">AI</span>
+                    <span class="code">Monitoring</span>
+                </p>
+            </div>
+
+            <h2 style="margin-bottom: 15px;">Available Services</h2>
+            <div class="services">
+                <a href="https://api.fkstrading.xyz/health" class="service-card" target="_blank">
+                    <h3>📊 API <span class="badge">LIVE</span></h3>
+                    <p>REST API endpoints</p>
+                </a>
+                
+                <a href="https://grafana.fkstrading.xyz" class="service-card" target="_blank">
+                    <h3>📈 Grafana <span class="badge">LIVE</span></h3>
+                    <p>Dashboards & Analytics</p>
+                </a>
+                
+                <a href="https://prometheus.fkstrading.xyz" class="service-card" target="_blank">
+                    <h3>🔍 Prometheus <span class="badge">LIVE</span></h3>
+                    <p>Metrics Collection</p>
+                </a>
+                
+                <a href="https://alertmanager.fkstrading.xyz" class="service-card" target="_blank">
+                    <h3>🔔 Alertmanager <span class="badge">LIVE</span></h3>
+                    <p>Alert Routing</p>
+                </a>
+            </div>
+
+            <div class="warning">
+                <h3 style="margin-bottom: 10px;">⚠️ Django Web UI: Under Development</h3>
+                <p>The web interface is being rebuilt. Current demo features:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>✅ Microservices API (fks-api, fks-app, fks-data, fks-ai)</li>
+                    <li>✅ Database (PostgreSQL with 100Gi storage)</li>
+                    <li>✅ Caching (Redis)</li>
+                    <li>✅ Monitoring Stack (Grafana + Prometheus + Alertmanager)</li>
+                    <li>⏳ Web UI (requires Docker image rebuild)</li>
+                </ul>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666;">
+                <p>FKS Trading Platform v1.0 • Kubernetes Deployment</p>
+                <p style="margin-top: 5px; font-size: 0.9em;">
+                    Powered by TimeCopilot, Lag-Llama, LangGraph Multi-Agent System
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing-page
+  namespace: fks-trading
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: landing-page
+  template:
+    metadata:
+      labels:
+        app: landing-page
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "50m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+      volumes:
+      - name: html
+        configMap:
+          name: landing-page-html
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: landing-page
+  namespace: fks-trading
+spec:
+  selector:
+    app: landing-page
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP

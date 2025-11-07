@@ -1,0 +1,81 @@
+# Prometheus configuration for FKS Trading Platform
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'fks-trading'
+    environment: 'local'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - 'alerts.yml'
+  - 'rules/quality_alerts.yml'
+  - 'rules/execution_alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter - System metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'system'
+
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'database'
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'cache'
+
+  # Django application metrics (requires django-prometheus)
+  - job_name: 'django-app'
+    static_configs:
+      - targets: ['web:8000']
+        labels:
+          service: 'web'
+    metrics_path: '/metrics'
+
+  # FKS App - ASMBTR metrics (Phase 4)
+  - job_name: 'fks_app'
+    static_configs:
+      - targets: ['fks_app:8002']
+        labels:
+          service: 'fks_app'
+          strategy: 'asmbtr'
+    metrics_path: '/metrics'
+    scrape_interval: 30s  # More frequent for trading signals
+
+  # Celery metrics (if exposed)
+  - job_name: 'celery'
+    static_configs:
+      - targets: ['celery_worker:8000']
+        labels:
+          service: 'celery-worker'
+    metrics_path: '/metrics'
+
+  # Nginx metrics (requires nginx-prometheus-exporter)
+  # - job_name: 'nginx'
+  #   static_configs:
+  #     - targets: ['nginx-exporter:9113']
+  #       labels:
+  #         service: 'nginx'

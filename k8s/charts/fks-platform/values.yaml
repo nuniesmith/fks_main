@@ -1,0 +1,524 @@
+# FKS Trading Platform - Helm Chart Values
+# Default configuration for all microservices
+
+# Global settings
+global:
+  environment: production
+  domain: fks-trading.com
+  timezone: UTC
+  
+  # Image registry
+  imageRegistry: docker.io
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+  
+  # Storage class
+  storageClass: standard
+  
+  # Resource limits (default - can be overridden per service)
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+# Service-specific configurations
+fks_main:
+  enabled: true
+  name: fks-main
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: main-latest
+    pullPolicy: IfNotPresent
+  
+  # Override entrypoint - fks_main is Django orchestrator web service
+  command:
+    - sh
+    - -c
+    - |
+      cd /app &&
+      python manage.py migrate --noinput &&
+      gunicorn services.web.src.django.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120 --max-requests 1000 --max-requests-jitter 50
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1536Mi  # Increased from 1Gi to 1.5Gi to resolve memory pressure
+    requests:
+      cpu: 200m
+      memory: 768Mi    # Increased from 512Mi to maintain 2:1 ratio
+  
+  env:
+    - name: DJANGO_SETTINGS_MODULE
+      value: "services.web.src.django.settings"
+    - name: ALLOWED_HOSTS
+      value: "*"
+    - name: DEBUG
+      value: "True"
+    - name: REDIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-redis
+          key: redis-password
+    - name: REDIS_URL
+      value: "redis://:$(REDIS_PASSWORD)@fks-platform-redis-master:6379/1"
+    - name: CELERY_BROKER_URL
+      value: "redis://:$(REDIS_PASSWORD)@fks-platform-redis-master:6379/0"
+    - name: CELERY_RESULT_BACKEND
+      value: "redis://:$(REDIS_PASSWORD)@fks-platform-redis-master:6379/0"
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: DATABASE_URL
+      value: "postgresql://fks_user:$(POSTGRES_PASSWORD)@fks-platform-postgresql:5432/fks_db"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+fks_api:
+  enabled: true
+  name: fks-api
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: api-latest
+  
+  service:
+    type: ClusterIP
+    port: 8001
+    targetPort: 8001
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+fks_app:
+  enabled: true
+  name: fks-app
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: app-latest
+  
+  service:
+    type: ClusterIP
+    port: 8002
+    targetPort: 8002
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+fks_ai:
+  enabled: false  # Disabled temporarily - requires GPU (enable after GPU setup)
+  name: fks-ai
+  replicaCount: 1
+  image:
+    repository: nuniesmith/fks
+    tag: ai-latest
+  
+  service:
+    type: ClusterIP
+    port: 8007
+    targetPort: 8007
+  
+  # GPU resources
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+      nvidia.com/gpu: 1  # Request 1 GPU
+    requests:
+      cpu: 1000m
+      memory: 4Gi
+      nvidia.com/gpu: 1
+  
+  # Node selector for GPU nodes
+  nodeSelector:
+    gpu: "true"
+  
+  # Tolerations for GPU nodes
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    # Custom metrics for AI workload
+    customMetrics:
+      - type: Pods
+        pods:
+          metric:
+            name: inference_queue_depth
+          target:
+            type: AverageValue
+            averageValue: "100"
+
+fks_data:
+  enabled: true
+  name: fks-data
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: data-latest
+  
+  service:
+    type: ClusterIP
+    port: 8003
+    targetPort: 8003
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 1Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetMemoryUtilizationPercentage: 80
+
+fks_execution:
+  enabled: false  # DISABLED - Binary exits immediately, needs rebuild with proper runtime
+  name: fks-execution
+  replicaCount: 1
+  image:
+    repository: nuniesmith/fks
+    tag: execution-latest
+  
+  # Override command - TEMPORARILY DISABLED for library debugging
+  command:
+    - /bin/sh
+    - -c
+    - |
+      echo "Debugging mode - checking binary"
+      ldd /usr/local/bin/fks_execution || echo "ldd failed"
+      echo "Attempting to run binary..."
+      /usr/local/bin/fks_execution --listen 0.0.0.0:8004 || echo "Binary failed with exit code: $?"
+      echo "Keeping container alive for debugging..."
+      sleep 3600
+  
+  # Environment variables for Rust service
+  env:
+    - name: RUST_LOG
+      value: "debug"
+    - name: RUST_BACKTRACE
+      value: "full"
+  
+  # Disable health checks temporarily for debugging
+  healthCheck:
+    enabled: false
+  
+  service:
+    type: ClusterIP
+    port: 8004
+    targetPort: 8004
+  
+  # Rust execution engine - vertical scaling
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  # VPA enabled for execution engine
+  verticalPodAutoscaler:
+    enabled: false  # Disabled - VPA CRD not installed
+    updateMode: Auto
+    minAllowed:
+      cpu: 500m
+      memory: 512Mi
+    maxAllowed:
+      cpu: 8000m
+      memory: 8Gi
+
+fks_ninja:
+  enabled: false  # Disabled - no Docker image (C# NinjaTrader app)
+  name: fks-ninja
+  replicaCount: 1
+  image:
+    repository: nuniesmith/fks
+    tag: ninja-latest
+  
+  service:
+    type: ClusterIP
+    port: 8005
+    targetPort: 8005
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+fks_mt5:
+  enabled: false  # Disabled - no Docker image (C++ MT5 app)
+  name: fks-mt5
+  replicaCount: 1
+  image:
+    repository: nuniesmith/fks
+    tag: mt5-latest
+  
+  service:
+    type: ClusterIP
+    port: 8006
+    targetPort: 8006
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+fks_web:
+  enabled: false  # Disabled - web-ui image missing celery dependency; use fks-main instead (serves same Django app on 8000)
+  name: fks-web
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: web-latest
+  
+  # Override entrypoint - fks_web uses gunicorn WSGI (no manage.py in this image)
+  command:
+    - gunicorn
+    - "src.django.wsgi:application"
+    - "--bind"
+    - "0.0.0.0:3001"
+    - "--workers"
+    - "2"
+    - "--chdir"
+    - "/app"
+  
+  service:
+    type: ClusterIP
+    port: 3001
+    targetPort: 3001
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  env:
+    - name: DJANGO_SETTINGS_MODULE
+      value: "src.django.settings"
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: fks-secrets
+          key: database-url
+
+# PostgreSQL (TimescaleDB)
+postgresql:
+  enabled: true
+  auth:
+    username: fks_user
+    password: ""  # Set via secrets
+    database: fks_db
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: standard
+    
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 2Gi
+  
+  # Enable TimescaleDB extension
+  image:
+    repository: timescale/timescaledb-ha
+    tag: pg14-latest
+  
+  # Streaming replication for HA
+  replication:
+    enabled: true
+    numSynchronousReplicas: 1
+    synchronousCommit: "on"
+
+# Redis
+redis:
+  enabled: true
+  
+  # Override image to use latest
+  image:
+    registry: docker.io
+    repository: bitnami/redis
+    tag: latest
+  
+  auth:
+    enabled: true
+    password: ""  # Set via secrets
+  
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+  
+  # Redis Sentinel for HA
+  sentinel:
+    enabled: false  # Disabled - sentinel image issue
+    quorum: 2
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  
+  hosts:
+    - host: fks-trading.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: fks-main
+          port: 8000
+    
+    - host: api.fks-trading.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: fks-api
+          port: 8001
+    
+    - host: web.fks-trading.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: fks-web
+          port: 3001
+  
+  tls:
+    - secretName: fks-trading-tls
+      hosts:
+        - fks-trading.com
+        - api.fks-trading.com
+        - web.fks-trading.com
+
+# Monitoring
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      size: 20Gi
+    retention: 30d
+
+grafana:
+  enabled: true
+  adminPassword: ""  # Set via secrets
+  persistence:
+    enabled: true
+    size: 10Gi
+
+# Network policies
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+
+# Pod security
+podSecurityPolicy:
+  enabled: false  # Disabled - PSP deprecated in K8s 1.25+
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+# Service mesh (optional)
+serviceMesh:
+  enabled: false
+  provider: istio  # or linkerd
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 30  # Days
+  storage:
+    size: 100Gi
+
+# Celery worker configuration
+celery:
+  enabled: false  # Disabled for now - using Celery Beat in fks-main
+  replicaCount: 2
+  concurrency: 4
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi

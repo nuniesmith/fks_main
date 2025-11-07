@@ -1,0 +1,80 @@
+{{- if .Values.podSecurityPolicy.enabled }}
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: fks-platform-psp
+  labels:
+    app: fks-platform
+spec:
+  privileged: false
+  allowPrivilegeEscalation: {{ .Values.podSecurityPolicy.allowPrivilegeEscalation }}
+  
+  # Required fields
+  runAsUser:
+    rule: MustRunAsNonRoot
+  
+  seLinux:
+    rule: RunAsAny
+  
+  supplementalGroups:
+    rule: RunAsAny
+  
+  fsGroup:
+    rule: RunAsAny
+  
+  # Read-only root filesystem
+  readOnlyRootFilesystem: false
+  
+  # Allowed volume types
+  volumes:
+  - 'configMap'
+  - 'emptyDir'
+  - 'projected'
+  - 'secret'
+  - 'downwardAPI'
+  - 'persistentVolumeClaim'
+  
+  # Host restrictions
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  
+  # Capabilities
+  allowedCapabilities: []
+  defaultAddCapabilities: []
+  requiredDropCapabilities:
+  - ALL
+
+---
+# Role for using the PSP
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: fks-platform-psp-user
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups:
+  - policy
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+  resourceNames:
+  - fks-platform-psp
+
+---
+# RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: fks-platform-psp-binding
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: fks-platform-psp-user
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: {{ .Release.Namespace }}
+{{- end }}

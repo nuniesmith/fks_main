@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fks-platform-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: fks-platform
+data:
+  # Global configuration
+  ENVIRONMENT: {{ .Values.global.environment | quote }}
+  TIMEZONE: {{ .Values.global.timezone | quote }}
+  
+  # Service discovery
+  FKS_MAIN_URL: "http://fks-main:8000"
+  FKS_API_URL: "http://fks-api:8001"
+  FKS_APP_URL: "http://fks-app:8002"
+  FKS_AI_URL: "http://fks-ai:8007"
+  FKS_DATA_URL: "http://fks-data:8003"
+  FKS_EXECUTION_URL: "http://fks-execution:8004"
+  FKS_NINJA_URL: "http://fks-ninja:8005"
+  FKS_MT5_URL: "http://fks-mt5:8006"
+  FKS_WEB_URL: "http://fks-web:3001"
+  
+  # Database configuration (connection string in secrets)
+  POSTGRES_HOST: "fks-platform-postgresql"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "fks_db"
+  
+  # Redis configuration (password in secrets)
+  REDIS_HOST: "fks-platform-redis-master"
+  REDIS_PORT: "6379"
+  
+  # Celery configuration
+  CELERY_BROKER_URL: "redis://fks-platform-redis-master:6379/0"
+  CELERY_RESULT_BACKEND: "redis://fks-platform-redis-master:6379/0"
+  
+  # Monitoring
+  PROMETHEUS_URL: "http://prometheus-server:9090"
+  GRAFANA_URL: "http://grafana:3000"
+  
+  # Logging
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"

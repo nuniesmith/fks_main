@@ -1,0 +1,135 @@
+name: Update DNS with Tailscale IP
+
+on:
+  schedule:
+    # Run every hour to check for IP changes
+    - cron: '0 * * * *'
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches:
+      - main
+    paths:
+      - 'k8s/tailscale-operator.yaml'
+      - '.github/workflows/update-dns.yml'
+
+jobs:
+  update-dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Get Tailscale IP
+        id: tailscale-ip
+        run: |
+          # Wait for Tailscale to connect
+          sleep 5
+          
+          # Get the Tailscale IP of the k8s connector
+          TAILSCALE_IP=$(tailscale status --json | jq -r '.Peer[] | select(.HostName=="fks-trading-k8s") | .TailscaleIPs[0]')
+          
+          if [ -z "$TAILSCALE_IP" ]; then
+            echo "Error: Could not find Tailscale IP for fks-trading-k8s"
+            exit 1
+          fi
+          
+          echo "Found Tailscale IP: $TAILSCALE_IP"
+          echo "ip=$TAILSCALE_IP" >> $GITHUB_OUTPUT
+
+      - name: Update Cloudflare DNS
+        env:
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TAILSCALE_IP: ${{ steps.tailscale-ip.outputs.ip }}
+        run: |
+          # Update A records for all subdomains
+          DOMAINS=(
+            "fkstrading.xyz"
+            "api.fkstrading.xyz"
+            "app.fkstrading.xyz"
+            "data.fkstrading.xyz"
+            "execution.fkstrading.xyz"
+            "grafana.fkstrading.xyz"
+            "prometheus.fkstrading.xyz"
+          )
+          
+          for DOMAIN in "${DOMAINS[@]}"; do
+            echo "Updating DNS for $DOMAIN to $TAILSCALE_IP"
+            
+            # Get existing record ID
+            RECORD_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?type=A&name=$DOMAIN" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" | jq -r '.result[0].id')
+            
+            if [ "$RECORD_ID" == "null" ]; then
+              # Create new record
+              curl -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data '{
+                  "type": "A",
+                  "name": "'"$DOMAIN"'",
+                  "content": "'"$TAILSCALE_IP"'",
+                  "ttl": 300,
+                  "proxied": false,
+                  "comment": "Auto-updated by GitHub Actions"
+                }'
+            else
+              # Update existing record
+              curl -X PUT "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/$RECORD_ID" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data '{
+                  "type": "A",
+                  "name": "'"$DOMAIN"'",
+                  "content": "'"$TAILSCALE_IP"'",
+                  "ttl": 300,
+                  "proxied": false,
+                  "comment": "Auto-updated by GitHub Actions - Last: '"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
+                }'
+            fi
+          done
+
+      - name: Verify DNS Updates
+        run: |
+          echo "Waiting 30 seconds for DNS propagation..."
+          sleep 30
+          
+          TAILSCALE_IP="${{ steps.tailscale-ip.outputs.ip }}"
+          
+          # Test DNS resolution
+          for DOMAIN in fkstrading.xyz api.fkstrading.xyz app.fkstrading.xyz; do
+            RESOLVED_IP=$(dig +short $DOMAIN @1.1.1.1 | head -n1)
+            echo "$DOMAIN resolves to: $RESOLVED_IP"
+            
+            if [ "$RESOLVED_IP" == "$TAILSCALE_IP" ]; then
+              echo "✅ $DOMAIN correctly points to $TAILSCALE_IP"
+            else
+              echo "⚠️  $DOMAIN points to $RESOLVED_IP (expected $TAILSCALE_IP)"
+            fi
+          done
+
+      - name: Test HTTPS Access
+        run: |
+          TAILSCALE_IP="${{ steps.tailscale-ip.outputs.ip }}"
+          
+          # Test main health endpoint
+          echo "Testing https://fkstrading.xyz/health/"
+          curl -k -f --max-time 10 https://fkstrading.xyz/health/ || echo "⚠️  Main health check failed"
+          
+          # Test execution service
+          echo "Testing https://execution.fkstrading.xyz/health"
+          curl -k -f --max-time 10 https://execution.fkstrading.xyz/health || echo "⚠️  Execution health check failed"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ DNS update failed! Check logs above."
+          # Optional: Send notification to Discord/Slack

@@ -1,0 +1,225 @@
+groups:
+  - name: execution_pipeline
+    interval: 30s
+    rules:
+      # ====================================================================
+      # Webhook Alerts
+      # ====================================================================
+
+      - alert: HighWebhookLatency
+        expr: histogram_quantile(0.95, rate(execution_webhook_processing_duration_seconds_bucket[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High webhook processing latency"
+          description: "95th percentile webhook latency is {{ $value | humanizeDuration }}, exceeding 100ms threshold."
+          recommended_action: "1. Check webhook handler performance\n2. Review validation logic\n3. Monitor database query time\n4. Consider caching"
+
+      - alert: WebhookValidationFailureRate
+        expr: rate(execution_webhook_validation_failures_total[5m]) / rate(execution_webhook_requests_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          category: data_quality
+        annotations:
+          summary: "High webhook validation failure rate"
+          description: "{{ $value | humanizePercentage }} of webhooks are failing validation for {{ $labels.source }}."
+          recommended_action: "1. Check TradingView alert configuration\n2. Review webhook payload schema\n3. Validate required fields\n4. Check for malformed JSON"
+
+      - alert: WebhookSignatureFailures
+        expr: rate(execution_webhook_signature_failures_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Webhook signature verification failures detected"
+          description: "{{ $value }} signature verification failures per second from {{ $labels.source }}."
+          recommended_action: "1. Verify webhook secret matches TradingView\n2. Check for replay attacks\n3. Review client IP\n4. Investigate potential security breach"
+
+      - alert: HighStaleWebhookRate
+        expr: rate(execution_webhook_stale_rejected_total[5m]) / rate(execution_webhook_requests_total[5m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          category: latency
+        annotations:
+          summary: "High rate of stale webhook rejections"
+          description: "{{ $value | humanizePercentage }} of webhooks are stale (>300s old)."
+          recommended_action: "1. Check TradingView alert delays\n2. Monitor network latency\n3. Review webhook queue backlog\n4. Consider increasing max_age threshold"
+
+      # ====================================================================
+      # Order Execution Alerts
+      # ====================================================================
+
+      - alert: HighOrderFailureRate
+        expr: rate(execution_order_failures_total[5m]) / rate(execution_orders_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: critical
+          category: trading
+        annotations:
+          summary: "High order execution failure rate"
+          description: "{{ $value | humanizePercentage }} of orders are failing for {{ $labels.exchange }}."
+          recommended_action: "1. Check exchange API status\n2. Verify API keys are valid\n3. Review balance/margin\n4. Check for rate limiting\n5. Monitor exchange_errors metric"
+
+      - alert: SlowOrderExecution
+        expr: histogram_quantile(0.95, rate(execution_order_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Slow order execution"
+          description: "95th percentile order execution time is {{ $value | humanizeDuration }} for {{ $labels.exchange }}."
+          recommended_action: "1. Check exchange API latency\n2. Monitor network connectivity\n3. Review CCXT library performance\n4. Consider using faster order types"
+
+      - alert: NoOrdersExecuted
+        expr: rate(execution_orders_total[10m]) == 0
+        for: 15m
+        labels:
+          severity: warning
+          category: monitoring
+        annotations:
+          summary: "No orders executed recently"
+          description: "No orders have been executed in the last 15 minutes."
+          recommended_action: "1. Check if this is expected (low activity)\n2. Verify webhook delivery\n3. Check confidence filtering\n4. Review security middleware (rate limiting, circuit breaker)"
+
+      # ====================================================================
+      # Security Alerts
+      # ====================================================================
+
+      - alert: HighRateLimitRejections
+        expr: rate(execution_rate_limit_rejections_total[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High rate limit rejections from {{ $labels.client_ip }}"
+          description: "{{ $value }} requests/sec are being rate limited from {{ $labels.client_ip }}."
+          recommended_action: "1. Check if IP is legitimate\n2. Review rate limit configuration\n3. Consider blocking IP if suspicious\n4. Investigate potential attack"
+
+      - alert: CircuitBreakerOpen
+        expr: execution_circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: critical
+          category: resilience
+        annotations:
+          summary: "Circuit breaker opened for {{ $labels.exchange }}"
+          description: "Circuit breaker is OPEN for {{ $labels.exchange }}, blocking all requests."
+          recommended_action: "1. Check exchange API status\n2. Review recent order failures\n3. Wait for timeout (60s) to enter HALF_OPEN\n4. Monitor circuit_breaker_transitions metric"
+
+      - alert: HighCircuitBreakerRejections
+        expr: rate(execution_circuit_breaker_rejections_total[5m]) > 5
+        for: 3m
+        labels:
+          severity: warning
+          category: resilience
+        annotations:
+          summary: "Circuit breaker blocking requests for {{ $labels.exchange }}"
+          description: "{{ $value }} requests/sec are being blocked by circuit breaker."
+          recommended_action: "1. Check if exchange is recovering\n2. Monitor failure rate\n3. Review circuit breaker thresholds\n4. Consider manual intervention if needed"
+
+      - alert: UnauthorizedIPAttempts
+        expr: rate(execution_ip_whitelist_rejections_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Unauthorized IP attempts detected"
+          description: "{{ $value }} unauthorized access attempts per second from {{ $labels.client_ip }}."
+          recommended_action: "1. Investigate source IP\n2. Check if IP should be whitelisted\n3. Review security logs\n4. Consider blocking at firewall level"
+
+      # ====================================================================
+      # Performance Alerts
+      # ====================================================================
+
+      - alert: HighPipelineLatency
+        expr: histogram_quantile(0.95, rate(execution_pipeline_latency_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High end-to-end pipeline latency"
+          description: "95th percentile pipeline latency is {{ $value | humanizeDuration }}."
+          recommended_action: "1. Profile webhook handler\n2. Check validation performance\n3. Monitor exchange API latency\n4. Review security middleware overhead"
+
+      - alert: HighActiveRequests
+        expr: execution_active_requests > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "High number of active requests"
+          description: "{{ $value }} requests currently being processed."
+          recommended_action: "1. Check for processing bottlenecks\n2. Monitor webhook queue\n3. Review async task performance\n4. Consider scaling execution service"
+
+      # ====================================================================
+      # Exchange Alerts
+      # ====================================================================
+
+      - alert: ExchangeAPIErrors
+        expr: rate(execution_exchange_errors_total[5m]) > 1
+        for: 3m
+        labels:
+          severity: warning
+          category: integration
+        annotations:
+          summary: "High exchange API error rate"
+          description: "{{ $value }} errors/sec from {{ $labels.exchange }} API."
+          recommended_action: "1. Check exchange status page\n2. Review API error types\n3. Verify credentials\n4. Monitor rate limits\n5. Check CCXT library version"
+
+      - alert: ExchangeRateLimitHit
+        expr: rate(execution_exchange_rate_limits_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          category: integration
+        annotations:
+          summary: "Exchange rate limits reached"
+          description: "Hitting rate limits on {{ $labels.exchange }} ({{ $value }}/sec)."
+          recommended_action: "1. Reduce request frequency\n2. Implement request queuing\n3. Use WebSocket instead of REST\n4. Review CCXT rate limit handling"
+
+      - alert: NoExchangeConnections
+        expr: sum(execution_exchange_connections) == 0
+        for: 5m
+        labels:
+          severity: critical
+          category: integration
+        annotations:
+          summary: "No active exchange connections"
+          description: "All exchange connections are down."
+          recommended_action: "1. Check exchange service status\n2. Verify network connectivity\n3. Review CCXT initialization\n4. Check for authentication failures"
+
+      # ====================================================================
+      # Data Quality Alerts
+      # ====================================================================
+
+      - alert: HighValidationErrorRate
+        expr: rate(execution_validation_errors_total[5m]) > 5
+        for: 3m
+        labels:
+          severity: warning
+          category: data_quality
+        annotations:
+          summary: "High validation error rate"
+          description: "{{ $value }} validation errors/sec for {{ $labels.validation_type }}."
+          recommended_action: "1. Review webhook payloads\n2. Check data normalization\n3. Validate field types\n4. Review validation rules"
+
+      - alert: HighNaNReplacementRate
+        expr: rate(execution_nan_replacements_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: data_quality
+        annotations:
+          summary: "High NaN replacement rate"
+          description: "{{ $value }} NaN values/sec being replaced in {{ $labels.field }}."
+          recommended_action: "1. Check data source quality\n2. Review exchange API responses\n3. Validate data transformation\n4. Investigate upstream issues"

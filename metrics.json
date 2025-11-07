@@ -1,0 +1,122 @@
+{
+  "timestamp": "2025-11-06T04:08:30.015254",
+  "files": {
+    "total": 1413,
+    "by_type": {
+      ".py": 763,
+      ".js": 197,
+      ".cs": 71,
+      ".sh": 52,
+      ".css": 51,
+      ".md": 48,
+      ".txt": 47,
+      ".svg": 46,
+      "no_extension": 20,
+      ".yml": 18,
+      ".xml": 15,
+      ".png": 14,
+      ".html": 13,
+      ".ps1": 9,
+      ".json": 7,
+      ".ini": 4,
+      ".map": 4,
+      ".woff": 4,
+      ".ttf": 4,
+      ".eot": 4,
+      ".rs": 4,
+      ".toml": 3,
+      ".csproj": 3,
+      ".yaml": 2,
+      ".db": 2,
+      ".woff2": 2,
+      ".ico": 2,
+      ".lock": 1,
+      ".tgz": 1,
+      ".code-workspace": 1,
+      ".sln": 1
+    },
+    "total_size_kb": 31124.21,
+    "empty_files": [
+      "src/services/web/src/ninja/migrations/__init__.py",
+      "src/services/data/src/domain/processing/__init__.py",
+      "src/services/data/src/domain/processing/layers/preprocessing.py",
+      "src/services/data/src/domain/processing/layers/__init__.py",
+      "src/authentication/migrations/__init__.py"
+    ],
+    "small_files": [
+      "src/framework/__init__.py",
+      "src/core/admin.py",
+      "src/core/models.py",
+      "src/monitor/__init__.py",
+      "src/framework/exceptions/__init__.py",
+      "src/framework/patterns/__init__.py",
+      "src/services/ai/tests/__init__.py",
+      "src/services/ai/src/__init__.py",
+      "src/services/ai/tests/unit/__init__.py",
+      "src/services/ai/src/processors/__init__.py",
+      "src/services/ai/src/memory/__init__.py",
+      "src/services/api/src/__init__.py",
+      "src/services/api/src/framework/__init__.py",
+      "src/services/api/src/routers/__init__.py",
+      "src/services/api/src/middleware/__init__.py",
+      "src/services/api/src/dependencies/__init__.py",
+      "src/services/api/src/infrastructure/__init__.py",
+      "src/services/api/src/domain/__init__.py",
+      "src/services/api/src/framework/exceptions/__init__.py",
+      "src/services/api/src/framework/patterns/__init__.py"
+    ]
+  },
+  "code": {
+    "python_files": 775,
+    "total_lines": 188638,
+    "functions": 1562,
+    "classes": 1546,
+    "avg_lines_per_file": 243
+  },
+  "tests": {
+    "test_files": 58,
+    "tests_total": 34,
+    "tests_passed": 14,
+    "pass_rate": 41.2
+  },
+  "imports": {
+    "legacy_imports": {
+      "config_module": [
+        "src/framework/config/constants.py",
+        "src/services/api/src/app.py",
+        "src/shared/framework/config/constants.py"
+      ],
+      "shared_python": [
+        "src/services/api/sitecustomize.py",
+        "src/services/data/scripts/test_shared_integration.py",
+        "src/services/data/src/bars.py",
+        "src/services/data/src/tests/test_adapter_retries.py",
+        "src/services/data/src/tests/test_shared_import.py",
+        "src/services/data/src/tests/test_logging_json_adapter.py",
+        "src/services/data/src/tests/test_adapters_errors.py",
+        "src/services/data/src/adapters/polygon.py",
+        "src/services/data/src/adapters/binance.py",
+        "src/services/data/src/adapters/base.py"
+      ]
+    },
+    "files_with_legacy": 13,
+    "framework_imports": 97,
+    "django_imports": 49
+  },
+  "technical_debt": {
+    "markers": {
+      "TODO": 40,
+      "FIXME": 0,
+      "HACK": 0,
+      "XXX": 2,
+      "stub": 39,
+      "legacy": 138
+    },
+    "total_debt_comments": 219
+  },
+  "git": {
+    "branch": "copilot/update-weekly-health-report",
+    "uncommitted_changes": 0,
+    "clean": true
+  }
+}

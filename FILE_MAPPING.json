@@ -1,0 +1,194 @@
+{
+  "metadata": {
+    "date": "2025-11-07",
+    "source_repo": "nuniesmith/fks",
+    "total_files": 4481,
+    "target_repos": 9,
+    "strategy": "git-filter-repo with history preservation"
+  },
+  "repositories": {
+    "fks_ai": {
+      "github_url": "https://github.com/nuniesmith/fks_ai",
+      "file_count_estimate": 84,
+      "primary_language": "Python",
+      "docker_images": ["nuniesmith/fks_ai:cpu", "nuniesmith/fks_ai:gpu", "nuniesmith/fks_ai:arm64"],
+      "paths": [
+        "repo/ai/",
+        "src/services/ai/",
+        "notebooks/transformer/",
+        "tests/unit/test_rag/",
+        "tests/unit/test_sentiment/"
+      ],
+      "glob_patterns": [
+        "repo/ai/**/*",
+        "src/services/ai/**/*",
+        "notebooks/transformer/**/*",
+        "tests/**/test_rag*.py",
+        "tests/**/test_sentiment*.py"
+      ],
+      "exclude_patterns": [
+        "**/__pycache__/",
+        "**/*.pyc",
+        "**/.pytest_cache/"
+      ]
+    },
+    "fks_api": {
+      "github_url": "https://github.com/nuniesmith/fks_api",
+      "file_count_estimate": 230,
+      "primary_language": "Python",
+      "docker_images": ["nuniesmith/fks_api:latest"],
+      "paths": [
+        "repo/api/",
+        "tests/integration/test_api*"
+      ],
+      "glob_patterns": [
+        "repo/api/**/*",
+        "tests/integration/test_api*.py"
+      ]
+    },
+    "fks_app": {
+      "github_url": "https://github.com/nuniesmith/fks_app",
+      "file_count_estimate": 99,
+      "primary_language": "Python",
+      "docker_images": ["nuniesmith/fks_app:latest"],
+      "paths": [
+        "repo/app/",
+        "data/asmbtr_real_data_optimization.json",
+        "tests/unit/test_asmbtr_with_sentiment.py"
+      ],
+      "glob_patterns": [
+        "repo/app/**/*",
+        "data/asmbtr_real_data_optimization.json",
+        "tests/unit/test_asmbtr*.py",
+        "tests/unit/strategies/asmbtr/**/*"
+      ]
+    },
+    "fks_data": {
+      "github_url": "https://github.com/nuniesmith/fks_data",
+      "file_count_estimate": 232,
+      "primary_language": "Python",
+      "docker_images": ["nuniesmith/fks_data:latest"],
+      "paths": [
+        "repo/data/",
+        "data/market_data/",
+        "tests/integration/test_data/"
+      ],
+      "glob_patterns": [
+        "repo/data/**/*",
+        "data/market_data/**/*",
+        "tests/integration/test_data*.py",
+        "tests/**/test_adapters*.py"
+      ]
+    },
+    "fks_execution": {
+      "github_url": "https://github.com/nuniesmith/fks_execution",
+      "file_count_estimate": 36,
+      "primary_language": "Python",
+      "docker_images": ["nuniesmith/fks_execution:latest"],
+      "paths": [
+        "src/services/execution/",
+        "tests/unit/test_execution/",
+        "tests/integration/test_execution_pipeline.py"
+      ],
+      "glob_patterns": [
+        "src/services/execution/**/*",
+        "tests/**/test_execution*.py"
+      ]
+    },
+    "fks_ninja": {
+      "github_url": "https://github.com/nuniesmith/fks_ninja",
+      "file_count_estimate": 260,
+      "primary_language": "C#",
+      "docker_images": ["nuniesmith/fks_ninja:latest"],
+      "paths": [
+        "repo/ninja/"
+      ],
+      "glob_patterns": [
+        "repo/ninja/**/*.cs",
+        "repo/ninja/**/*.csproj",
+        "repo/ninja/**/*.sln"
+      ]
+    },
+    "fks_meta": {
+      "github_url": "https://github.com/nuniesmith/fks_meta",
+      "file_count_estimate": 5,
+      "primary_language": "MQL5",
+      "docker_images": ["nuniesmith/fks_meta:latest"],
+      "paths": [
+        "scripts/devtools/scripts-meta/"
+      ],
+      "glob_patterns": [
+        "scripts/devtools/scripts-meta/**/*"
+      ],
+      "note": "Minimal structure, to be expanded"
+    },
+    "fks_web": {
+      "github_url": "https://github.com/nuniesmith/fks_web",
+      "file_count_estimate": 219,
+      "primary_language": "Python",
+      "docker_images": ["nuniesmith/fks_web:latest"],
+      "paths": [
+        "repo/web/",
+        "tests/unit/test_web_views.py"
+      ],
+      "glob_patterns": [
+        "repo/web/**/*",
+        "tests/unit/test_web*.py"
+      ]
+    },
+    "fks_main": {
+      "github_url": "https://github.com/nuniesmith/fks_main",
+      "file_count_estimate": 696,
+      "primary_language": "Mixed",
+      "docker_images": [],
+      "paths": [
+        "docs/",
+        "k8s/",
+        "monitoring/",
+        "scripts/",
+        ".github/",
+        "docker-compose.yml",
+        "docker-compose.gpu.yml",
+        "Makefile",
+        "README.md",
+        "requirements.txt",
+        "requirements.dev.txt",
+        "requirements.gpu.txt"
+      ],
+      "glob_patterns": [
+        "docs/**/*",
+        "k8s/**/*",
+        "monitoring/**/*",
+        "scripts/**/*",
+        ".github/**/*",
+        "docker-compose*.yml",
+        "Makefile",
+        "README.md",
+        "requirements*.txt",
+        "*.sh"
+      ],
+      "note": "Orchestration repo, no service code"
+    }
+  },
+  "shared_code": {
+    "paths": [
+      "src/shared/",
+      "src/core/",
+      "src/framework/"
+    ],
+    "file_count_estimate": 351,
+    "strategy": "duplicate_to_all_service_repos",
+    "future_plan": "Extract to fks_shared pip package in Phase 9",
+    "sync_script": "scripts/sync-shared-code.sh"
+  },
+  "split_commands": {
+    "fks_ai": "git filter-repo --path repo/ai/ --path src/services/ai/ --path notebooks/transformer/ --force",
+    "fks_api": "git filter-repo --path repo/api/ --force",
+    "fks_app": "git filter-repo --path repo/app/ --force",
+    "fks_data": "git filter-repo --path repo/data/ --path data/market_data/ --force",
+    "fks_execution": "git filter-repo --path src/services/execution/ --force",
+    "fks_ninja": "git filter-repo --path repo/ninja/ --force",
+    "fks_meta": "git filter-repo --path scripts/devtools/scripts-meta/ --force",
+    "fks_web": "git filter-repo --path repo/web/ --force"
+  }
+}

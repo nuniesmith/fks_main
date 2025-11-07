@@ -1,0 +1,181 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fks-platform-ingress
+  namespace: fks-trading
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - fkstrading.xyz
+    - "*.fkstrading.xyz"
+    secretName: fkstrading-tls
+  rules:
+  - host: fkstrading.xyz
+    http:
+      paths:
+      # Main web UI
+      - path: /()(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-main
+            port:
+              number: 8000
+      
+      # API service
+      - path: /api(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-api
+            port:
+              number: 8001
+      
+      # App service (strategies/signals)
+      - path: /app(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-app
+            port:
+              number: 8002
+      
+      # Data service
+      - path: /data(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-data
+            port:
+              number: 8003
+      
+      # Execution service
+      - path: /execution(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-execution
+            port:
+              number: 8004
+      
+      # Grafana dashboard
+      - path: /grafana(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-platform-grafana
+            port:
+              number: 80
+      
+      # Prometheus
+      - path: /prometheus(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-platform-prometheus-server
+            port:
+              number: 80
+---
+# Multi-service Ingress with subdomain routing
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fks-platform-ingress-multi
+  namespace: fks-trading
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  # Main web UI
+  - host: fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-main
+            port:
+              number: 8000
+  
+  # API service
+  - host: api.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-api
+            port:
+              number: 8001
+  
+  # App service
+  - host: app.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-app
+            port:
+              number: 8002
+  
+  # Data service
+  - host: data.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-data
+            port:
+              number: 8003
+  
+  # Execution service
+  - host: execution.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-execution
+            port:
+              number: 8004
+  
+  # Grafana
+  - host: grafana.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-platform-grafana
+            port:
+              number: 80
+  
+  # Prometheus
+  - host: prometheus.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-platform-prometheus-server
+            port:
+              number: 80

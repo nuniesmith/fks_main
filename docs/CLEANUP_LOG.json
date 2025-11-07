@@ -1,0 +1,114 @@
+{
+  "timestamp": "2025-11-04T22:42:19.253960",
+  "deleted_files": [
+    {
+      "path": "k8s/tests/load-test-health.js",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-11-03T14:59:14.560196"
+    },
+    {
+      "path": "k8s/tests/load-test-api.js",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-11-03T14:59:14.680196"
+    },
+    {
+      "path": "k8s/tests/stress-test.js",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-11-03T14:59:15.320197"
+    },
+    {
+      "path": "src/services/execution/target/release/.cargo-lock",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-11-03T13:07:49.614158"
+    },
+    {
+      "path": "src/services/api/src/pyproject.toml",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-10-27T22:11:56"
+    },
+    {
+      "path": "scripts/core/dependencies.sh",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-07-05T19:55:26"
+    },
+    {
+      "path": "scripts/docker/entrypoint-c#.sh",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-07-12T21:34:10"
+    },
+    {
+      "path": "scripts/run/core/dependencies.sh",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-07-05T19:55:26"
+    },
+    {
+      "path": "scripts/ninja/linux/test-package.sh",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-07-08T00:38:32"
+    },
+    {
+      "path": "scripts/deployment/tools/troubleshoot-ssh.sh",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-07-06T17:22:39"
+    },
+    {
+      "path": "scripts/nginx/utils/validation.sh",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-07-25T10:04:33"
+    },
+    {
+      "path": "scripts/nginx/utils/logging.sh",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-07-25T10:04:33"
+    },
+    {
+      "path": "scripts/nginx/templates/monitoring/health-check.sh",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-07-25T10:04:33"
+    },
+    {
+      "path": "logs/nginx/fkstrading.xyz.error.log",
+      "reason": "Empty file (0 bytes)",
+      "size": 0,
+      "last_modified": "2025-10-17T14:09:16"
+    },
+    {
+      "path": "src/authentication/__init__.py",
+      "reason": "Small stub file (46 bytes)",
+      "size": 46,
+      "last_modified": "2025-10-17T15:15:19"
+    },
+    {
+      "path": "src/services/api/src/utils/__init__.py",
+      "reason": "Small stub file (28 bytes)",
+      "size": 28,
+      "last_modified": "2025-10-27T22:11:56"
+    },
+    {
+      "path": "src/authentication/management/__init__.py",
+      "reason": "Small stub file (27 bytes)",
+      "size": 27,
+      "last_modified": "2025-10-17T15:15:19"
+    },
+    {
+      "path": "src/authentication/management/commands/__init__.py",
+      "reason": "Small stub file (21 bytes)",
+      "size": 21,
+      "last_modified": "2025-10-17T15:15:19"
+    }
+  ],
+  "total_deleted": 18
+}
