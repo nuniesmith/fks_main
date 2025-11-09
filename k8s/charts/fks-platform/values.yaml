@@ -34,19 +34,12 @@ fks_main:
     tag: main-latest
     pullPolicy: IfNotPresent
   
-  # Override entrypoint - fks_main is Django orchestrator web service
-  command:
-    - sh
-    - -c
-    - |
-      cd /app &&
-      python manage.py migrate --noinput &&
-      gunicorn services.web.src.django.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120 --max-requests 1000 --max-requests-jitter 50
-  
+  # fks_main is a Rust-based orchestration service (not Django)
+  # It runs on port 8010 as per service_registry.json and main.rs
   service:
     type: ClusterIP
-    port: 8000
-    targetPort: 8000
+    port: 8010
+    targetPort: 8010
   
   resources:
     limits:

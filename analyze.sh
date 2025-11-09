@@ -8,7 +8,6 @@
 # --full Generate a full_code.txt file with concatenated contents of all analyzed files
 # --output=DIR Specify output directory (defaults to timestamped)
 # --exclude=DIR1,DIR2 Comma-separated directories to exclude (e.g., target,node_modules)
-# --skip-shared Skip the 'shared/' directory (common in FKS)
 # --help Show this help message
 # Env vars for CI: ANALYZE_OUTPUT_DIR, ANALYZE_LINT (true/false), ANALYZE_FULL (true/false), ANALYZE_EXCLUDE, ANALYZE_SKIP_SHARED (true/false)
 set -e
@@ -25,7 +24,6 @@ case "$1" in
 --full) FULL=1; shift ;;
 --output=*) OUTPUT_DIR="${1#*=}"; shift ;;
 --exclude=*) EXCLUDE_LIST="${1#*=}"; shift ;;
---skip-shared) SKIP_SHARED=1; shift ;;
 --help) echo "Usage: $0 [options] <directory_path>"; echo "Options: --lint, --full, --output=DIR, --exclude=DIR1,DIR2, --skip-shared, --help"; exit 0 ;;
 *) TARGET_DIR="$1"; shift ;;
 esac
