@@ -1,0 +1,311 @@
+{
+  "timestamp": "2025-11-08T07:09:42.031244",
+  "services": {
+    "api": {
+      "service": "api",
+      "path": "/home/jordan/Documents/code/fks/repo/core/api",
+      "exists": true,
+      "endpoints_in_code": [
+        "/health"
+      ],
+      "endpoints_tested": [
+        {
+          "endpoint": "/health",
+          "url": "http://localhost:8001/health",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        }
+      ],
+      "has_health_endpoint": true,
+      "has_working_endpoint": false,
+      "has_liveness": false,
+      "has_readiness": true,
+      "recommendations": [
+        {
+          "priority": "Medium",
+          "issue": "Health endpoint found but not responding",
+          "recommendation": "Ensure service is running and endpoint is accessible"
+        },
+        {
+          "priority": "Medium",
+          "issue": "Missing separate liveness/readiness probes",
+          "recommendation": "Implement separate /live (liveness) and /ready (readiness) endpoints"
+        }
+      ]
+    },
+    "app": {
+      "service": "app",
+      "path": "/home/jordan/Documents/code/fks/repo/core/app",
+      "exists": true,
+      "endpoints_in_code": [
+        "/health"
+      ],
+      "endpoints_tested": [
+        {
+          "endpoint": "/health",
+          "url": "http://localhost:8002/health",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        }
+      ],
+      "has_health_endpoint": true,
+      "has_working_endpoint": false,
+      "has_liveness": false,
+      "has_readiness": true,
+      "recommendations": [
+        {
+          "priority": "Medium",
+          "issue": "Health endpoint found but not responding",
+          "recommendation": "Ensure service is running and endpoint is accessible"
+        },
+        {
+          "priority": "Medium",
+          "issue": "Missing separate liveness/readiness probes",
+          "recommendation": "Implement separate /live (liveness) and /ready (readiness) endpoints"
+        }
+      ]
+    },
+    "data": {
+      "service": "data",
+      "path": "/home/jordan/Documents/code/fks/repo/core/data",
+      "exists": true,
+      "endpoints_in_code": [
+        "/health"
+      ],
+      "endpoints_tested": [
+        {
+          "endpoint": "/health",
+          "url": "http://localhost:8003/health",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        }
+      ],
+      "has_health_endpoint": true,
+      "has_working_endpoint": false,
+      "has_liveness": false,
+      "has_readiness": true,
+      "recommendations": [
+        {
+          "priority": "Medium",
+          "issue": "Health endpoint found but not responding",
+          "recommendation": "Ensure service is running and endpoint is accessible"
+        },
+        {
+          "priority": "Medium",
+          "issue": "Missing separate liveness/readiness probes",
+          "recommendation": "Implement separate /live (liveness) and /ready (readiness) endpoints"
+        }
+      ]
+    },
+    "execution": {
+      "service": "execution",
+      "path": "/home/jordan/Documents/code/fks/repo/core/execution",
+      "exists": true,
+      "endpoints_in_code": [
+        "/ready",
+        "/health"
+      ],
+      "endpoints_tested": [
+        {
+          "endpoint": "/ready",
+          "url": "http://localhost:8006/ready",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        },
+        {
+          "endpoint": "/health",
+          "url": "http://localhost:8006/health",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        }
+      ],
+      "has_health_endpoint": true,
+      "has_working_endpoint": false,
+      "has_liveness": false,
+      "has_readiness": true,
+      "recommendations": [
+        {
+          "priority": "Medium",
+          "issue": "Health endpoint found but not responding",
+          "recommendation": "Ensure service is running and endpoint is accessible"
+        },
+        {
+          "priority": "Medium",
+          "issue": "Missing separate liveness/readiness probes",
+          "recommendation": "Implement separate /live (liveness) and /ready (readiness) endpoints"
+        }
+      ]
+    },
+    "web": {
+      "service": "web",
+      "path": "/home/jordan/Documents/code/fks/repo/core/web",
+      "exists": true,
+      "endpoints_in_code": [
+        "/health"
+      ],
+      "endpoints_tested": [
+        {
+          "endpoint": "/health",
+          "url": "http://localhost:8000/health",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        }
+      ],
+      "has_health_endpoint": true,
+      "has_working_endpoint": false,
+      "has_liveness": false,
+      "has_readiness": true,
+      "recommendations": [
+        {
+          "priority": "Medium",
+          "issue": "Health endpoint found but not responding",
+          "recommendation": "Ensure service is running and endpoint is accessible"
+        },
+        {
+          "priority": "Medium",
+          "issue": "Missing separate liveness/readiness probes",
+          "recommendation": "Implement separate /live (liveness) and /ready (readiness) endpoints"
+        }
+      ]
+    },
+    "ai": {
+      "service": "ai",
+      "path": "/home/jordan/Documents/code/fks/repo/gpu/ai",
+      "exists": true,
+      "endpoints_in_code": [
+        "/health"
+      ],
+      "endpoints_tested": [
+        {
+          "endpoint": "/health",
+          "url": "http://localhost:8007/health",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        }
+      ],
+      "has_health_endpoint": true,
+      "has_working_endpoint": false,
+      "has_liveness": false,
+      "has_readiness": true,
+      "recommendations": [
+        {
+          "priority": "Medium",
+          "issue": "Health endpoint found but not responding",
+          "recommendation": "Ensure service is running and endpoint is accessible"
+        },
+        {
+          "priority": "Medium",
+          "issue": "Missing separate liveness/readiness probes",
+          "recommendation": "Implement separate /live (liveness) and /ready (readiness) endpoints"
+        }
+      ]
+    },
+    "analyze": {
+      "service": "analyze",
+      "path": "/home/jordan/Documents/code/fks/repo/tools/analyze",
+      "exists": true,
+      "endpoints_in_code": [
+        "/ready",
+        "/health"
+      ],
+      "endpoints_tested": [
+        {
+          "endpoint": "/ready",
+          "url": "http://localhost:8008/ready",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        },
+        {
+          "endpoint": "/health",
+          "url": "http://localhost:8008/health",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        }
+      ],
+      "has_health_endpoint": true,
+      "has_working_endpoint": false,
+      "has_liveness": false,
+      "has_readiness": true,
+      "recommendations": [
+        {
+          "priority": "Medium",
+          "issue": "Health endpoint found but not responding",
+          "recommendation": "Ensure service is running and endpoint is accessible"
+        },
+        {
+          "priority": "Medium",
+          "issue": "Missing separate liveness/readiness probes",
+          "recommendation": "Implement separate /live (liveness) and /ready (readiness) endpoints"
+        }
+      ]
+    },
+    "monitor": {
+      "service": "monitor",
+      "path": "/home/jordan/Documents/code/fks/repo/core/monitor",
+      "exists": true,
+      "endpoints_in_code": [
+        "/ready",
+        "/health"
+      ],
+      "endpoints_tested": [
+        {
+          "endpoint": "/ready",
+          "url": "http://localhost:8009/ready",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        },
+        {
+          "endpoint": "/health",
+          "url": "http://localhost:8009/health",
+          "tested": true,
+          "status_code": null,
+          "healthy": false,
+          "reason": "Service not running"
+        }
+      ],
+      "has_health_endpoint": true,
+      "has_working_endpoint": false,
+      "has_liveness": false,
+      "has_readiness": true,
+      "recommendations": [
+        {
+          "priority": "Medium",
+          "issue": "Health endpoint found but not responding",
+          "recommendation": "Ensure service is running and endpoint is accessible"
+        },
+        {
+          "priority": "Medium",
+          "issue": "Missing separate liveness/readiness probes",
+          "recommendation": "Implement separate /live (liveness) and /ready (readiness) endpoints"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total_services": 8,
+    "services_with_endpoints": 8,
+    "services_with_working_endpoints": 0,
+    "services_missing_endpoints": 0,
+    "total_recommendations": 16
+  }
+}

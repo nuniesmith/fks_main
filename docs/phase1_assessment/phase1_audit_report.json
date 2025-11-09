@@ -1,0 +1,366 @@
+{
+  "timestamp": "2025-11-08T07:09:41.796775",
+  "repos": {
+    "api": {
+      "repo": "api",
+      "path": "/home/jordan/Documents/code/fks/repo/core/api",
+      "exists": true,
+      "issues": [
+        {
+          "category": "Docker",
+          "type": "Missing .dockerignore",
+          "priority": "Low",
+          "description": "Dockerfile exists but no .dockerignore",
+          "recommendation": "Add .dockerignore to optimize builds"
+        }
+      ],
+      "metrics": {
+        "inter_service_dependencies": [
+          "fks_execution",
+          "fks_api"
+        ],
+        "total_files": 580,
+        "file_types": {
+          "no_ext": 339,
+          ".md": 3,
+          ".ini": 2,
+          ".yaml": 1,
+          ".py": 206,
+          ".sh": 4,
+          ".txt": 3,
+          ".toml": 1,
+          ".db": 2,
+          ".sample": 14,
+          ".yml": 5
+        },
+        "total_size_bytes": 2187535,
+        "total_size_mb": 2.09
+      },
+      "priority_issues": {
+        "high": [],
+        "medium": [],
+        "low": [
+          {
+            "category": "Docker",
+            "type": "Missing .dockerignore",
+            "priority": "Low",
+            "description": "Dockerfile exists but no .dockerignore",
+            "recommendation": "Add .dockerignore to optimize builds"
+          }
+        ]
+      }
+    },
+    "app": {
+      "repo": "app",
+      "path": "/home/jordan/Documents/code/fks/repo/Docker/app",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "auth": {
+      "repo": "auth",
+      "path": "/home/jordan/Documents/code/fks/repo/Docker/auth",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "data": {
+      "repo": "data",
+      "path": "/home/jordan/Documents/code/fks/repo/Docker/data",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "execution": {
+      "repo": "execution",
+      "path": "/home/jordan/Documents/code/fks/repo/Docker/execution",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "main": {
+      "repo": "main",
+      "path": "/home/jordan/Documents/code/fks/repo/Docker/main",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "monitor": {
+      "repo": "monitor",
+      "path": "/home/jordan/Documents/code/fks/repo/Code Quality/monitor",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "web": {
+      "repo": "web",
+      "path": "/home/jordan/Documents/code/fks/repo/Docker/web",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "ai": {
+      "repo": "ai",
+      "path": "/home/jordan/Documents/code/fks/repo/gpu/ai",
+      "exists": true,
+      "issues": [
+        {
+          "category": "Testing",
+          "type": "Missing test config",
+          "priority": "Low",
+          "description": "Test files found but no test configuration file",
+          "recommendation": "Add pytest.ini or appropriate test configuration"
+        },
+        {
+          "category": "Docker",
+          "type": "Missing Dockerfile",
+          "priority": "High",
+          "description": "No Dockerfile or docker-compose.yml found in ai",
+          "recommendation": "Add Dockerfile for containerization"
+        },
+        {
+          "category": "Code Quality",
+          "type": "Missing static analysis",
+          "priority": "Medium",
+          "description": "No static analysis configuration found",
+          "recommendation": "Add ruff.toml, .pylintrc, or appropriate linter config"
+        }
+      ],
+      "metrics": {
+        "inter_service_dependencies": [
+          "fks_ai"
+        ],
+        "total_files": 216,
+        "file_types": {
+          "no_ext": 124,
+          ".md": 3,
+          ".txt": 2,
+          ".py": 46,
+          ".pyc": 24,
+          ".TAG": 1,
+          ".sample": 14,
+          ".yml": 2
+        },
+        "total_size_bytes": 657027,
+        "total_size_mb": 0.63
+      },
+      "priority_issues": {
+        "high": [
+          {
+            "category": "Docker",
+            "type": "Missing Dockerfile",
+            "priority": "High",
+            "description": "No Dockerfile or docker-compose.yml found in ai",
+            "recommendation": "Add Dockerfile for containerization"
+          }
+        ],
+        "medium": [
+          {
+            "category": "Code Quality",
+            "type": "Missing static analysis",
+            "priority": "Medium",
+            "description": "No static analysis configuration found",
+            "recommendation": "Add ruff.toml, .pylintrc, or appropriate linter config"
+          }
+        ],
+        "low": [
+          {
+            "category": "Testing",
+            "type": "Missing test config",
+            "priority": "Low",
+            "description": "Test files found but no test configuration file",
+            "recommendation": "Add pytest.ini or appropriate test configuration"
+          }
+        ]
+      }
+    },
+    "training": {
+      "repo": "training",
+      "path": "/home/jordan/Documents/code/fks/repo/Code Quality/training",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "ninja": {
+      "repo": "ninja",
+      "path": "/home/jordan/Documents/code/fks/repo/plugin/ninja",
+      "exists": true,
+      "issues": [
+        {
+          "category": "Testing",
+          "type": "No tests found",
+          "priority": "High",
+          "description": "No test files or test directories found in ninja",
+          "recommendation": "Add pytest or appropriate test framework with test files"
+        },
+        {
+          "category": "Docker",
+          "type": "Missing Dockerfile",
+          "priority": "High",
+          "description": "No Dockerfile or docker-compose.yml found in ninja",
+          "recommendation": "Add Dockerfile for containerization"
+        },
+        {
+          "category": "Health Checks",
+          "type": "No health endpoint",
+          "priority": "Low",
+          "description": "No health endpoint (may not be needed for this service type)",
+          "recommendation": "Consider if health checks are needed"
+        },
+        {
+          "category": "Code Quality",
+          "type": "Missing static analysis",
+          "priority": "Medium",
+          "description": "No static analysis configuration found",
+          "recommendation": "Add ruff.toml, .pylintrc, or appropriate linter config"
+        }
+      ],
+      "metrics": {
+        "inter_service_dependencies": [
+          "fks_execution"
+        ],
+        "total_files": 567,
+        "file_types": {
+          ".code-workspace": 1,
+          ".json": 6,
+          "no_ext": 296,
+          ".md": 29,
+          ".sln": 1,
+          ".xml": 16,
+          ".zip": 1,
+          ".sh": 41,
+          ".py": 4,
+          ".tgz": 1,
+          ".csproj": 3,
+          ".cs": 79,
+          ".cache": 6,
+          ".props": 1,
+          ".targets": 1,
+          ".editorconfig": 2,
+          ".pdb": 2,
+          ".dll": 9,
+          ".txt": 33,
+          ".ps1": 9,
+          ".png": 6,
+          ".js": 2,
+          ".sample": 14,
+          ".yml": 4
+        },
+        "total_size_bytes": 57860351,
+        "total_size_mb": 55.18
+      },
+      "priority_issues": {
+        "high": [
+          {
+            "category": "Testing",
+            "type": "No tests found",
+            "priority": "High",
+            "description": "No test files or test directories found in ninja",
+            "recommendation": "Add pytest or appropriate test framework with test files"
+          },
+          {
+            "category": "Docker",
+            "type": "Missing Dockerfile",
+            "priority": "High",
+            "description": "No Dockerfile or docker-compose.yml found in ninja",
+            "recommendation": "Add Dockerfile for containerization"
+          }
+        ],
+        "medium": [
+          {
+            "category": "Code Quality",
+            "type": "Missing static analysis",
+            "priority": "Medium",
+            "description": "No static analysis configuration found",
+            "recommendation": "Add ruff.toml, .pylintrc, or appropriate linter config"
+          }
+        ],
+        "low": [
+          {
+            "category": "Health Checks",
+            "type": "No health endpoint",
+            "priority": "Low",
+            "description": "No health endpoint (may not be needed for this service type)",
+            "recommendation": "Consider if health checks are needed"
+          }
+        ]
+      }
+    },
+    "meta": {
+      "repo": "meta",
+      "path": "/home/jordan/Documents/code/fks/repo/Code Quality/meta",
+      "exists": false,
+      "error": "Repository not found"
+    },
+    "analyze": {
+      "repo": "analyze",
+      "path": "/home/jordan/Documents/code/fks/repo/tools/analyze",
+      "exists": true,
+      "issues": [
+        {
+          "category": "Testing",
+          "type": "Limited tests",
+          "priority": "Medium",
+          "description": "Only 0 test files found",
+          "recommendation": "Consider adding more comprehensive test coverage"
+        },
+        {
+          "category": "Code Quality",
+          "type": "Missing static analysis",
+          "priority": "Medium",
+          "description": "No static analysis configuration found",
+          "recommendation": "Add ruff.toml, .pylintrc, or appropriate linter config"
+        }
+      ],
+      "metrics": {
+        "inter_service_dependencies": [
+          "redis"
+        ],
+        "total_files": 82,
+        "file_types": {
+          ".md": 1,
+          "no_ext": 45,
+          ".txt": 2,
+          ".sh": 1,
+          ".yml": 2,
+          ".py": 17,
+          ".sample": 14
+        },
+        "total_size_bytes": 178634,
+        "total_size_mb": 0.17
+      },
+      "priority_issues": {
+        "high": [],
+        "medium": [
+          {
+            "category": "Testing",
+            "type": "Limited tests",
+            "priority": "Medium",
+            "description": "Only 0 test files found",
+            "recommendation": "Consider adding more comprehensive test coverage"
+          },
+          {
+            "category": "Code Quality",
+            "type": "Missing static analysis",
+            "priority": "Medium",
+            "description": "No static analysis configuration found",
+            "recommendation": "Add ruff.toml, .pylintrc, or appropriate linter config"
+          }
+        ],
+        "low": []
+      }
+    }
+  },
+  "summary": {
+    "total_repos": 14,
+    "repos_audited": 4,
+    "total_issues": 10,
+    "high_priority_issues": 3,
+    "medium_priority_issues": 4,
+    "low_priority_issues": 3
+  },
+  "issues_by_category": {
+    "Docker": 3,
+    "Testing": 3,
+    "Code Quality": 3,
+    "Health Checks": 1
+  },
+  "issues_by_repo": {
+    "api": 1,
+    "ai": 9,
+    "ninja": 16,
+    "analyze": 4
+  }
+}

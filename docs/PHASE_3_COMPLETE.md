@@ -414,7 +414,6 @@ export DATABASE_URL="postgresql://user:pass@localhost/fks_audit"
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
 
 services:
   fks_execution:

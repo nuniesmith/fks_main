@@ -1,0 +1,264 @@
+{
+  "dashboard": {
+    "title": "FKS SLO Dashboard",
+    "panels": [
+      {
+        "title": "fks_api - Availability",
+        "targets": [
+          {
+            "expr": "fks_api:availability:ratio * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "fks_api - Error Budget Remaining",
+        "targets": [
+          {
+            "expr": "fks_api:error_budget:remaining * 100",
+            "legendFormat": "Budget %"
+          }
+        ],
+        "type": "graph",
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  20
+                ],
+                "type": "lt"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "fks_monitor - Availability",
+        "targets": [
+          {
+            "expr": "fks_monitor:availability:ratio * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "fks_monitor - Error Budget Remaining",
+        "targets": [
+          {
+            "expr": "fks_monitor:error_budget:remaining * 100",
+            "legendFormat": "Budget %"
+          }
+        ],
+        "type": "graph",
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  20
+                ],
+                "type": "lt"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "fks_main - Availability",
+        "targets": [
+          {
+            "expr": "fks_main:availability:ratio * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "fks_main - Error Budget Remaining",
+        "targets": [
+          {
+            "expr": "fks_main:error_budget:remaining * 100",
+            "legendFormat": "Budget %"
+          }
+        ],
+        "type": "graph",
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  20
+                ],
+                "type": "lt"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "fks_data - Availability",
+        "targets": [
+          {
+            "expr": "fks_data:availability:ratio * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "fks_data - Error Budget Remaining",
+        "targets": [
+          {
+            "expr": "fks_data:error_budget:remaining * 100",
+            "legendFormat": "Budget %"
+          }
+        ],
+        "type": "graph",
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  20
+                ],
+                "type": "lt"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "fks_execution - Availability",
+        "targets": [
+          {
+            "expr": "fks_execution:availability:ratio * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "fks_execution - Error Budget Remaining",
+        "targets": [
+          {
+            "expr": "fks_execution:error_budget:remaining * 100",
+            "legendFormat": "Budget %"
+          }
+        ],
+        "type": "graph",
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  20
+                ],
+                "type": "lt"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "fks_web - Availability",
+        "targets": [
+          {
+            "expr": "fks_web:availability:ratio * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "fks_web - Error Budget Remaining",
+        "targets": [
+          {
+            "expr": "fks_web:error_budget:remaining * 100",
+            "legendFormat": "Budget %"
+          }
+        ],
+        "type": "graph",
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  20
+                ],
+                "type": "lt"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "fks_ai - Availability",
+        "targets": [
+          {
+            "expr": "fks_ai:availability:ratio * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "fks_ai - Error Budget Remaining",
+        "targets": [
+          {
+            "expr": "fks_ai:error_budget:remaining * 100",
+            "legendFormat": "Budget %"
+          }
+        ],
+        "type": "graph",
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  20
+                ],
+                "type": "lt"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "title": "fks_analyze - Availability",
+        "targets": [
+          {
+            "expr": "fks_analyze:availability:ratio * 100",
+            "legendFormat": "Availability %"
+          }
+        ],
+        "type": "graph"
+      },
+      {
+        "title": "fks_analyze - Error Budget Remaining",
+        "targets": [
+          {
+            "expr": "fks_analyze:error_budget:remaining * 100",
+            "legendFormat": "Budget %"
+          }
+        ],
+        "type": "graph",
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  20
+                ],
+                "type": "lt"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "refresh": "30s"
+  }
+}

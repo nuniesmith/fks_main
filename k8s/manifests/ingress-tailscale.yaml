@@ -30,7 +30,7 @@ spec:
     - prometheus.fkstrading.xyz
     - alertmanager.fkstrading.xyz
     - flower.fkstrading.xyz
-    secretName: fkstrading-tls
+    secretName: fks-tls
   
   rules:
   # Django Web UI (main application)

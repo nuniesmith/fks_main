@@ -337,7 +337,6 @@ docker tag nuniesmith/fks_ai:cpu nuniesmith/fks_ai:latest
 **File**: `fks_ai/docker-compose.yml`
 
 ```yaml
-version: '3.8'
 
 services:
   ai:
@@ -394,7 +393,6 @@ docker-compose down
 **File**: `fks_main/docker-compose.yml`
 
 ```yaml
-version: '3.8'
 
 services:
   # AI Service

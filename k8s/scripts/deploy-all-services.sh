@@ -125,18 +125,19 @@ log_info "Configuring ingress for Tailscale network..."
 kubectl apply -f $K8S_DIR/ingress-tailscale.yaml
 log_success "Ingress configured"
 
-# Update /etc/hosts for Tailscale IP
+# Update /etc/hosts for Tailscale IP (non-blocking)
 TAILSCALE_IP="100.116.135.8"
 log_info "Updating /etc/hosts for Tailscale IP ($TAILSCALE_IP)..."
 
-# Backup /etc/hosts
-sudo cp /etc/hosts /etc/hosts.backup.$(date +%Y%m%d_%H%M%S)
+if sudo -n true 2>/dev/null; then
+    # Backup /etc/hosts
+    sudo cp /etc/hosts /etc/hosts.backup.$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
 
-# Remove old entries
-sudo sed -i '/fkstrading.xyz/d' /etc/hosts
+    # Remove old entries
+    sudo sed -i '/fkstrading.xyz/d' /etc/hosts 2>/dev/null || true
 
-# Add new entries with Tailscale IP
-cat <<EOF | sudo tee -a /etc/hosts
+    # Add new entries with Tailscale IP
+    cat <<EOF | sudo tee -a /etc/hosts > /dev/null 2>&1
 # FKS Trading - Tailscale network
 $TAILSCALE_IP fkstrading.xyz
 $TAILSCALE_IP www.fkstrading.xyz
@@ -147,8 +148,18 @@ $TAILSCALE_IP alertmanager.fkstrading.xyz
 $TAILSCALE_IP flower.fkstrading.xyz
 $TAILSCALE_IP execution.fkstrading.xyz
 EOF
-
-log_success "/etc/hosts updated with Tailscale IP"
+    
+    if [ $? -eq 0 ]; then
+        log_success "/etc/hosts updated with Tailscale IP"
+    else
+        log_warning "Could not update /etc/hosts (requires sudo). You can update manually:"
+        echo "  sudo bash -c 'echo \"$TAILSCALE_IP fkstrading.xyz api.fkstrading.xyz\" >> /etc/hosts'"
+    fi
+else
+    log_warning "Sudo access required to update /etc/hosts. Skipping (non-critical)."
+    log_info "To update manually, run:"
+    echo "  sudo bash -c 'echo \"$TAILSCALE_IP fkstrading.xyz api.fkstrading.xyz grafana.fkstrading.xyz\" >> /etc/hosts'"
+fi
 
 # Configure minikube tunnel for LoadBalancer (run in background)
 log_info "Setting up ingress access..."

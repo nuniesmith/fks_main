@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "updated": "2025-11-08T08:21:07.574935",
+  "services": {
+    "fks_api": {
+      "name": "fks_api",
+      "port": 8001,
+      "base_url": "http://fks_api:8001",
+      "health_url": "http://fks_api:8001/health",
+      "dependencies": [
+        "fks_data",
+        "fks_auth"
+      ]
+    },
+    "fks_app": {
+      "name": "fks_app",
+      "port": 8002,
+      "base_url": "http://fks_app:8002",
+      "health_url": "http://fks_app:8002/health",
+      "dependencies": [
+        "fks_api",
+        "fks_data"
+      ]
+    },
+    "fks_data": {
+      "name": "fks_data",
+      "port": 8003,
+      "base_url": "http://fks_data:8003",
+      "health_url": "http://fks_data:8003/health",
+      "dependencies": []
+    },
+    "fks_execution": {
+      "name": "fks_execution",
+      "port": 8006,
+      "base_url": "http://fks_execution:8006",
+      "health_url": "http://fks_execution:8006/health",
+      "dependencies": [
+        "fks_api",
+        "fks_data"
+      ]
+    },
+    "fks_web": {
+      "name": "fks_web",
+      "port": 8000,
+      "base_url": "http://fks_web:8000",
+      "health_url": "http://fks_web:8000/health",
+      "dependencies": [
+        "fks_api"
+      ]
+    },
+    "fks_ai": {
+      "name": "fks_ai",
+      "port": 8007,
+      "base_url": "http://fks_ai:8007",
+      "health_url": "http://fks_ai:8007/health",
+      "dependencies": [
+        "fks_data"
+      ]
+    },
+    "fks_analyze": {
+      "name": "fks_analyze",
+      "port": 8008,
+      "base_url": "http://fks_analyze:8008",
+      "health_url": "http://fks_analyze:8008/health",
+      "dependencies": [
+        "fks_data",
+        "fks_ai"
+      ]
+    },
+    "fks_monitor": {
+      "name": "fks_monitor",
+      "port": 8009,
+      "base_url": "http://fks_monitor:8009",
+      "health_url": "http://fks_monitor:8009/health",
+      "dependencies": [
+        "all"
+      ]
+    },
+    "fks_main": {
+      "name": "fks_main",
+      "port": 8010,
+      "base_url": "http://fks_main:8010",
+      "health_url": "http://fks_main:8010/health",
+      "dependencies": [
+        "fks_monitor"
+      ]
+    }
+  }
+}
