@@ -41,8 +41,8 @@ log_step() { echo -e "${CYAN}[STEP]${NC} $1"; }
 print_banner() {
     echo ""
     echo -e "${CYAN}╔═══════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║  FKS Trading Platform - Startup              ║${NC}"
-    echo -e "${CYAN}║  Deployment Type: ${DEPLOYMENT_TYPE^^}${NC}$(printf '%*s' $((25-${#DEPLOYMENT_TYPE})) '')║"
+    echo -e "${CYAN}║  FKS Trading Platform - Startup               ║${NC}"
+    echo -e "${CYAN}║  Deployment Type: ${DEPLOYMENT_TYPE^^}${NC}$(printf '%*s' $((25-${#DEPLOYMENT_TYPE})) '')  ║"
     echo -e "${CYAN}╚═══════════════════════════════════════════════╝${NC}"
     echo ""
 }

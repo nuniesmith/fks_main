@@ -84,6 +84,16 @@
       "dependencies": [
         "fks_monitor"
       ]
+    },
+    "fks_portfolio": {
+      "name": "fks_portfolio",
+      "port": 8012,
+      "base_url": "http://fks_portfolio:8012",
+      "health_url": "http://fks_portfolio:8012/health",
+      "dependencies": [
+        "fks_data",
+        "fks_ai"
+      ]
     }
   }
 }
