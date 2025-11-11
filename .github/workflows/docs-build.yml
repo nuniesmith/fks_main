@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'repo/main/docs/**'
+      - 'docs/**'
       - 'mkdocs.yml'
   workflow_dispatch:
 
@@ -32,8 +32,13 @@ jobs:
       
       - name: Build documentation site
         run: |
-          cd repo/main
-          mkdocs build --site-dir ../site
+          # Check if we're in a monorepo structure or standalone
+          if [ -d "repo/main" ]; then
+            cd repo/main
+            mkdocs build --site-dir ../../site
+          else
+            mkdocs build --site-dir site
+          fi
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -41,7 +46,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: |
+            site
+            repo/main/site
 
   deploy:
     environment:

@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'repo/main/docs/**'
+      - 'docs/**'
       - '.github/workflows/docs-audit.yml'
   workflow_dispatch:  # Allow manual trigger
 
@@ -32,17 +32,27 @@ jobs:
       
       - name: Run documentation audit
         run: |
-          cd repo/main
+          # Check if we're in a monorepo structure or standalone
+          if [ -d "repo/main" ]; then
+            cd repo/main
+            DOCS_DIR="docs"
+            OUTPUT_FILE="docs-audit-report.json"
+          else
+            DOCS_DIR="docs"
+            OUTPUT_FILE="docs-audit-report.json"
+          fi
           python scripts/docs/audit_files.py \
-            --docs-dir docs \
-            --output docs-audit-report.json \
+            --docs-dir "$DOCS_DIR" \
+            --output "$OUTPUT_FILE" \
             --summary
       
       - name: Upload audit report
         uses: actions/upload-artifact@v4
         with:
           name: docs-audit-report
-          path: repo/main/docs-audit-report.json
+          path: |
+            docs-audit-report.json
+            repo/main/docs-audit-report.json
           retention-days: 7
       
       - name: Comment on PR
@@ -51,7 +61,10 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const report = JSON.parse(fs.readFileSync('repo/main/docs-audit-report.json', 'utf8'));
+            const path = fs.existsSync('repo/main/docs-audit-report.json') 
+              ? 'repo/main/docs-audit-report.json' 
+              : 'docs-audit-report.json';
+            const report = JSON.parse(fs.readFileSync(path, 'utf8'));
             
             let comment = '## 📊 Documentation Audit Results\n\n';
             comment += `**Total Files**: ${report.total_files}\n\n`;

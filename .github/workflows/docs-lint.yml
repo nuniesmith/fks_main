@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'repo/main/docs/**'
+      - 'docs/**'
       - '.github/workflows/docs-lint.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'repo/main/docs/**'
+      - 'docs/**'
 
 jobs:
   lint:
@@ -25,7 +25,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '20'
-          cache: 'npm'
       
       - name: Install Markdownlint
         run: |
@@ -34,19 +33,39 @@ jobs:
       
       - name: Lint Markdown files
         run: |
-          cd repo/main/docs
+          # Check if we're in a monorepo structure or standalone
+          if [ -d "repo/main/docs" ]; then
+            cd repo/main/docs
+            CONFIG="../.markdownlint.json"
+          else
+            cd docs
+            CONFIG="../.markdownlint.json"
+          fi
           markdownlint "**/*.md" --fix || true
         continue-on-error: true
       
       - name: Check for linting errors
         run: |
-          cd repo/main/docs
-          markdownlint "**/*.md" --config ../.markdownlint.json || exit 1
+          # Check if we're in a monorepo structure or standalone
+          if [ -d "repo/main/docs" ]; then
+            cd repo/main/docs
+            CONFIG="../.markdownlint.json"
+          else
+            cd docs
+            CONFIG="../.markdownlint.json"
+          fi
+          if [ -f "$CONFIG" ]; then
+            markdownlint "**/*.md" --config "$CONFIG" || exit 1
+          else
+            markdownlint "**/*.md" || exit 1
+          fi
       
       - name: Commit fixes (if any)
         if: github.event_name == 'push'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'docs: auto-fix markdown linting issues'
-          file_pattern: 'repo/main/docs/**/*.md'
+          file_pattern: |
+            repo/main/docs/**/*.md
+            docs/**/*.md
 

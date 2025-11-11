@@ -7,7 +7,7 @@
 # Integrates with GitHub Actions for Docker builds/pushes to nuniesmith/fks
 # Supports Docker Compose and basic K8s ops
 # Added GitHub Actions workflow status checker
-
+# Added Minikube and Docker installation for Ubuntu if not available
 # Don't exit on error in main loop - we want to handle errors gracefully
 # Use 'set -e' in individual functions where appropriate
 set +e
@@ -48,6 +48,65 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Check if running on Ubuntu
+is_ubuntu() {
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    if [ "$ID" = "ubuntu" ]; then
+      return 0
+    fi
+  fi
+  return 1
+}
+
+# Install Docker if not available (for Ubuntu)
+install_docker() {
+  if ! is_ubuntu; then
+    log_error "Docker installation is only supported for Ubuntu in this script."
+    return 1
+  fi
+
+  log_info "Installing Docker on Ubuntu..."
+  sudo apt-get update || { log_error "apt update failed"; return 1; }
+  sudo apt-get install -y ca-certificates curl || { log_error "Prerequisite packages failed"; return 1; }
+  sudo install -m 0755 -d /etc/apt/keyrings
+  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc || { log_error "GPG key download failed"; return 1; }
+  sudo chmod a+r /etc/apt/keyrings/docker.asc
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$UBUNTU_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  sudo apt-get update || { log_error "apt update failed after adding repo"; return 1; }
+  sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { log_error "Docker installation failed"; return 1; }
+  sudo usermod -aG docker $USER || log_warning "Failed to add user to docker group; may need manual sudo for docker commands."
+  log_success "Docker installed. Log out and back in for group changes to take effect."
+  return 0
+}
+
+# Install Minikube if not available (for Ubuntu)
+install_minikube() {
+  if ! is_ubuntu; then
+    log_error "Minikube installation is only supported for Ubuntu in this script."
+    return 1
+  fi
+
+  # Check for Docker first, as it's a prerequisite
+  if ! command -v docker &> /dev/null; then
+    log_warning "Docker is required for Minikube but not installed."
+    read -p "Install Docker now? (y/n): " install_docker_choice
+    if [ "$install_docker_choice" = "y" ]; then
+      install_docker || return 1
+    else
+      log_error "Cannot proceed without Docker."
+      return 1
+    fi
+  fi
+
+  log_info "Installing Minikube on Ubuntu..."
+  curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64 || { log_error "Download failed"; return 1; }
+  sudo install minikube-linux-amd64 /usr/local/bin/minikube || { log_error "Installation failed"; return 1; }
+  rm minikube-linux-amd64
+  log_success "Minikube installed."
+  return 0
+}
+
 # Get service path
 get_service_path() {
   local service="$1"
@@ -58,28 +117,26 @@ get_service_path() {
 manage_venv() {
   local service="$1"
   local install_deps="${2:-false}"
-  
+
   # Check if service is Python-based
   if [[ ! " ${PYTHON_SERVICES[*]} " =~ " ${service} " ]]; then
     log_warning "$service is not a Python service - skipping venv creation"
     return 0
   fi
-  
+
   local service_path=$(get_service_path "$service")
   if [ ! -d "$service_path" ]; then
     log_error "Service directory not found: $service_path"
     return 1
   fi
-  
+
   cd "$service_path"
-  
+
   if [ ! -d ".venv" ]; then
     log_info "Creating virtual environment for $service..."
     python3 -m venv .venv || { log_error "Failed to create venv"; return 1; }
   fi
-  
-  # Note: source won't persist after function returns (bash limitation)
-  # User needs to manually activate: source repo/$service/.venv/bin/activate
+
   if [ "$install_deps" = true ]; then
     log_info "Installing dependencies for $service..."
     "$service_path/.venv/bin/pip" install --upgrade pip setuptools wheel || { log_error "Failed to upgrade pip"; return 1; }
@@ -94,7 +151,7 @@ manage_venv() {
     log_info "Virtual environment ready for $service"
     log_info "To activate: source $service_path/.venv/bin/activate"
   fi
-  
+
   return 0
 }
 
@@ -102,75 +159,75 @@ manage_venv() {
 build_docker() {
   local service="$1"
   local tag="${2:-$DEFAULT_TAG}"
-  
+
   local service_path=$(get_service_path "$service")
   if [ ! -d "$service_path" ]; then
     log_error "Service not found: $service"
     return 1
   fi
-  
+
   cd "$service_path"
-  
+
   if [ ! -f "Dockerfile" ]; then
     log_warning "No Dockerfile found for $service - skipping build"
     return 1
   fi
-  
+
   # Use same naming convention as GitHub Actions: nuniesmith/fks:service-tag
   local image_name="$DOCKER_USERNAME/$DOCKER_REPO:${service}-${tag}"
   log_info "Building Docker image: $image_name"
-  
+
   docker build -t "$image_name" . || { log_error "Build failed for $service"; return 1; }
   log_success "Built $image_name successfully"
-  
+
   return 0
 }
 
 # Start service (Docker Compose)
 start_service() {
   local service="$1"
-  
+
   local service_path=$(get_service_path "$service")
   if [ ! -d "$service_path" ]; then
     log_error "Service not found: $service"
     return 1
   fi
-  
+
   cd "$service_path"
-  
+
   if [ ! -f "docker-compose.yml" ]; then
     log_warning "No docker-compose.yml for $service - skipping"
     return 1
   fi
-  
+
   log_info "Starting $service..."
   docker compose up -d --build || { log_error "Failed to start $service"; return 1; }
   log_success "$service started"
-  
+
   return 0
 }
 
 # Stop service
 stop_service() {
   local service="$1"
-  
+
   local service_path=$(get_service_path "$service")
   if [ ! -d "$service_path" ]; then
     log_error "Service not found: $service"
     return 1
   fi
-  
+
   cd "$service_path"
-  
+
   if [ ! -f "docker-compose.yml" ]; then
     log_warning "No docker-compose.yml for $service - skipping"
     return 1
   fi
-  
+
   log_info "Stopping $service..."
   docker compose down || { log_error "Failed to stop $service"; return 1; }
   log_success "$service stopped"
-  
+
   return 0
 }
 
@@ -184,35 +241,35 @@ commit_push() {
     log_error "Service not found: $service"
     return 1
   fi
-  
+
   cd "$service_path"
-  
+
   if [ ! -d ".git" ]; then
     log_warning "Not a git repo: $service - skipping"
     return 1
   fi
-  
+
   # Get current branch
   local current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
   log_info "Current branch: $current_branch"
-  
+
   git add -A
-  
+
   if git diff --cached --quiet; then
     log_info "No changes in $service - skipping commit"
     return 0
   fi
-  
+
   log_info "Committing changes in $service..."
   git commit -m "$message" || { log_error "Commit failed"; return 1; }
-  
+
   log_info "Pushing to remote (triggers GitHub Actions build/push)..."
   # Push to current branch (supports both main and master)
   git push origin "$current_branch" || { log_error "Push failed"; return 1; }
-  
+
   log_success "$service committed and pushed to $current_branch"
   log_info "GitHub Actions will build and push to dockerhub.com/nuniesmith/fks:${service}-latest"
-  
+
   return 0
 }
 
@@ -220,22 +277,22 @@ commit_push() {
 analyze_codebase() {
   local target_dir="${1:-$PROJECT_ROOT}"
   local output_dir="${2:-$PROJECT_ROOT/analysis_$(date +%Y%m%d_%H%M%S)}"
-  
+
   mkdir -p "$output_dir"
-  
+
   log_info "Analyzing codebase at $target_dir..."
-  
+
   # File tree
   if command -v tree >/dev/null; then
     tree -I '__pycache__|venv|target|.git|.idea|.vscode' "$target_dir" > "$output_dir/file_tree.txt"
   else
     find "$target_dir" -print | sort > "$output_dir/file_tree.txt"
   fi
-  
+
   # File counts
   find "$target_dir" -type f | grep -E '\.(py|rs|md|sh|yml|yaml|toml|json|Dockerfile)$' | \
     awk -F. '{print $NF}' | sort | uniq -c > "$output_dir/file_counts.txt"
-  
+
   log_success "Analysis complete - results in $output_dir"
 }
 
@@ -245,19 +302,16 @@ check_workflow_status() {
   if [ $# -gt 0 ]; then
     services_to_check=("$@")
   fi
-
   SUCCESS_COUNT=0
   FAIL_COUNT=0
   PENDING_COUNT=0
   NO_WORKFLOW_COUNT=0
   FAILED_SERVICES=()
   PENDING_SERVICES=()
-
   echo "=========================================="
   echo "GitHub Actions Workflow Status Check"
   echo "=========================================="
   echo ""
-
   # Check if gh CLI is available
   if ! command -v gh &> /dev/null; then
     echo -e "${RED}❌ GitHub CLI (gh) is not installed${NC}"
@@ -270,7 +324,6 @@ check_workflow_status() {
     done
     return 1
   fi
-
   # Check if authenticated
   if ! gh auth status &> /dev/null; then
     echo -e "${YELLOW}⚠️ GitHub CLI not authenticated${NC}"
@@ -282,16 +335,13 @@ check_workflow_status() {
     done
     return 1
   fi
-
   echo "Checking workflow runs for selected services..."
   echo ""
-
   for SERVICE in "${services_to_check[@]}"; do
     SERVICE_DIR=$(get_service_path "$SERVICE")
     echo "----------------------------------------"
     echo -e "${BLUE}Checking: $SERVICE${NC}"
     echo "----------------------------------------"
-
     # Check if directory exists
     if [ ! -d "$SERVICE_DIR" ]; then
       echo -e "${RED}❌ Service directory not found${NC}"
@@ -300,9 +350,7 @@ check_workflow_status() {
       echo ""
       continue
     fi
-
     cd "$SERVICE_DIR"
-
     # Check if it's a git repository
     if [ ! -d ".git" ]; then
       echo -e "${RED}❌ Not a git repository${NC}"
@@ -311,7 +359,6 @@ check_workflow_status() {
       echo ""
       continue
     fi
-
     # Check if workflow file exists
     if [ ! -f ".github/workflows/docker-build-push.yml" ]; then
       echo -e "${YELLOW}⚠️ Workflow file not found${NC}"
@@ -319,7 +366,6 @@ check_workflow_status() {
       echo ""
       continue
     fi
-
     # Get repository name
     REPO_URL=$(git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]\(.*\)\.git/\1/' | sed 's/.*github.com\///' | sed 's/\.git$//')
     if [ -z "$REPO_URL" ]; then
@@ -328,11 +374,9 @@ check_workflow_status() {
       echo ""
       continue
     fi
-
     echo " Repository: $REPO_URL"
     echo " GitHub: https://github.com/$REPO_URL/actions"
     echo ""
-
     # Check workflow runs
     WORKFLOW_RUNS=$(gh run list --repo "$REPO_URL" --limit 3 2>&1)
     if [ $? -ne 0 ]; then
@@ -341,7 +385,6 @@ check_workflow_status() {
       echo ""
       continue
     fi
-
     if [ -z "$WORKFLOW_RUNS" ] || [ "$WORKFLOW_RUNS" = "" ]; then
       echo -e " ${YELLOW}⚠️ No workflow runs found${NC}"
       PENDING_COUNT=$((PENDING_COUNT + 1))
@@ -349,7 +392,6 @@ check_workflow_status() {
       echo ""
       continue
     fi
-
     # Parse workflow runs (use process substitution to avoid subshell)
     echo " Recent workflow runs:"
     while IFS= read -r line; do
@@ -368,7 +410,6 @@ check_workflow_status() {
         echo " $line"
       fi
     done <<< "$WORKFLOW_RUNS"
-
     # Check latest run status
     LATEST_RUN=$(gh run list --repo "$REPO_URL" --limit 1 --json status,conclusion,workflowName,createdAt --jq '.[0]' 2>/dev/null)
     if [ -n "$LATEST_RUN" ] && [ "$LATEST_RUN" != "null" ]; then
@@ -408,7 +449,6 @@ check_workflow_status() {
     fi
     echo ""
   done
-
   echo "=========================================="
   echo "Summary"
   echo "=========================================="
@@ -451,9 +491,9 @@ pull_images() {
   local service="$1"
   local tag="${2:-latest}"
   local use_minikube="${3:-false}"
-  
+
   local image_name="$DOCKER_USERNAME/$DOCKER_REPO:${service}-${tag}"
-  
+
   # Set docker context if using minikube
   if [ "$use_minikube" = "true" ]; then
     if ! command -v minikube &> /dev/null; then
@@ -463,7 +503,7 @@ pull_images() {
     eval $(minikube docker-env)
     log_info "Using minikube Docker context"
   fi
-  
+
   log_info "Pulling $image_name..."
   if docker pull "$image_name"; then
     log_success "Pulled $image_name successfully"
@@ -476,18 +516,22 @@ pull_images() {
 
 # Sync images (pull latest from Docker Hub)
 sync_images() {
-  local services_to_sync=("${SERVICES[@]}")
   local use_minikube="${1:-false}"
-  
-  if [ $# -gt 1 ]; then
-    services_to_sync=("${@:2}")
+  shift
+  local services_to_sync=("${SERVICES[@]}")
+  if [ $# -gt 0 ]; then
+    services_to_sync=("$@")
   fi
-  
-  # Set docker context if using minikube
+
   if [ "$use_minikube" = "true" ]; then
     if ! command -v minikube &> /dev/null; then
-      log_error "minikube is not installed"
-      return 1
+      log_warning "Minikube not installed."
+      read -p "Install Minikube now? (y/n): " install_choice
+      if [ "$install_choice" = "y" ]; then
+        install_minikube || return 1
+      else
+        return 1
+      fi
     fi
     if ! minikube status &> /dev/null; then
       log_error "minikube is not running. Start it first with: minikube start"
@@ -496,11 +540,11 @@ sync_images() {
     eval $(minikube docker-env)
     log_info "Using minikube Docker context for image sync"
   fi
-  
+
   log_info "Syncing images from Docker Hub..."
   local success_count=0
   local failed_services=()
-  
+
   for service in "${services_to_sync[@]}"; do
     if pull_images "$service" "latest" "$use_minikube"; then
       success_count=$((success_count + 1))
@@ -508,14 +552,14 @@ sync_images() {
       failed_services+=("$service")
     fi
   done
-  
+
   echo ""
   log_info "Sync complete: $success_count/${#services_to_sync[@]} services synced"
   if [ ${#failed_services[@]} -gt 0 ]; then
     log_warning "Failed to sync: ${failed_services[*]}"
     return 1
   fi
-  
+
   return 0
 }
 
@@ -523,21 +567,21 @@ sync_images() {
 find_deployment_name() {
   local service="$1"
   local namespace="${2:-fks-trading}"
-  
+
   # Try different naming conventions
   local candidates=(
     "fks-$service"
     "$service"
     "fks_$service"
   )
-  
+
   for candidate in "${candidates[@]}"; do
     if kubectl get deployment "$candidate" -n "$namespace" &> /dev/null; then
       echo "$candidate"
       return 0
     fi
   done
-  
+
   return 1
 }
 
@@ -546,12 +590,12 @@ update_k8s_deployment() {
   local service="$1"
   local tag="${2:-latest}"
   local namespace="${3:-fks-trading}"
-  
+
   if ! command -v kubectl &> /dev/null; then
     log_error "kubectl is not installed"
     return 1
   fi
-  
+
   # Find the deployment name
   local deployment_name
   if deployment_name=$(find_deployment_name "$service" "$namespace"); then
@@ -562,10 +606,10 @@ update_k8s_deployment() {
     kubectl get deployments -n "$namespace" -o name 2>/dev/null | sed 's|deployment.apps/||' | sed 's/^/  - /' || log_warning "Could not list deployments"
     return 1
   fi
-  
+
   # Container name typically matches deployment name in Helm charts
   local container_name="$deployment_name"
-  
+
   # Verify container exists in deployment
   if ! kubectl get deployment "$deployment_name" -n "$namespace" -o jsonpath='{.spec.template.spec.containers[*].name}' | grep -q "$container_name"; then
     # Try to get the first container name
@@ -576,11 +620,11 @@ update_k8s_deployment() {
     fi
     log_info "Using container name: $container_name"
   fi
-  
+
   local image_name="$DOCKER_USERNAME/$DOCKER_REPO:${service}-${tag}"
-  
+
   log_info "Updating deployment $deployment_name (container: $container_name) in namespace $namespace to use $image_name..."
-  
+
   # Set image and trigger rollout
   if kubectl set image "deployment/$deployment_name" "$container_name=$image_name" -n "$namespace"; then
     log_success "Image updated for $deployment_name"
@@ -602,29 +646,29 @@ update_k8s_deployment() {
 
 # Sync images and update Kubernetes deployments
 sync_and_update_k8s() {
-  local services_to_sync=("${SERVICES[@]}")
   local namespace="${1:-fks-trading}"
   local use_minikube="${2:-true}"
-  
-  if [ $# -gt 2 ]; then
-    services_to_sync=("${@:3}")
+  shift 2
+  local services_to_sync=("${SERVICES[@]}")
+  if [ $# -gt 0 ]; then
+    services_to_sync=("$@")
   fi
-  
+
   log_info "Syncing images and updating Kubernetes deployments..."
   echo ""
-  
+
   # First, sync images
   if ! sync_images "$use_minikube" "${services_to_sync[@]}"; then
     log_warning "Some images failed to sync, but continuing with updates..."
   fi
-  
+
   echo ""
   log_info "Updating Kubernetes deployments..."
-  
+
   # Then update deployments
   local success_count=0
   local failed_services=()
-  
+
   for service in "${services_to_sync[@]}"; do
     if update_k8s_deployment "$service" "latest" "$namespace"; then
       success_count=$((success_count + 1))
@@ -632,17 +676,17 @@ sync_and_update_k8s() {
       failed_services+=("$service")
     fi
   done
-  
+
   echo ""
   log_info "Update complete: $success_count/${#services_to_sync[@]} deployments updated"
   if [ ${#failed_services[@]} -gt 0 ]; then
     log_warning "Failed to update: ${failed_services[*]}"
   fi
-  
+
   echo ""
   log_info "Waiting for rollouts to complete..."
   sleep 3
-  
+
   # Show rollout status
   for service in "${services_to_sync[@]}"; do
     local deployment_name
@@ -653,7 +697,7 @@ sync_and_update_k8s() {
       log_warning "Skipping rollout status check for $service (deployment not found)"
     fi
   done
-  
+
   echo ""
   log_success "Sync and update complete!"
   log_info "View pod status with: kubectl get pods -n $namespace"
@@ -662,27 +706,33 @@ sync_and_update_k8s() {
 # Kubernetes basic operations (from provided scripts)
 k8s_start() {
   log_info "Starting Kubernetes deployment..."
-  
-  # Check if minikube is available
+
+  # Check if minikube is available, install if not
   if ! command -v minikube &> /dev/null; then
-    log_error "minikube is not installed. Install it first."
-    return 1
+    log_warning "Minikube not installed."
+    read -p "Install Minikube now (Ubuntu only)? (y/n): " install_choice
+    if [ "$install_choice" = "y" ]; then
+      install_minikube || { log_error "Minikube installation failed"; return 1; }
+    else
+      log_error "Cannot proceed without Minikube."
+      return 1
+    fi
   fi
-  
+
   # Check if kubectl is available
   if ! command -v kubectl &> /dev/null; then
     log_error "kubectl is not installed. Install it first."
     return 1
   fi
-  
+
   # Start minikube
   minikube start || { log_error "Minikube start failed"; return 1; }
   eval $(minikube docker-env)
-  
+
   # Ask if user wants to build images locally or pull from Docker Hub
   read -p "Build images locally (b) or pull from Docker Hub (p)? [p]: " build_choice
   build_choice=${build_choice:-p}
-  
+
   if [ "$build_choice" = "b" ]; then
     log_info "Building all images locally for minikube..."
     for service in "${SERVICES[@]}"; do
@@ -692,14 +742,14 @@ k8s_start() {
     log_info "Pulling images from Docker Hub..."
     sync_images "true" "${SERVICES[@]}"
   fi
-  
+
   # Ask for namespace
   read -p "Enter Kubernetes namespace (default: fks-trading): " namespace
   namespace=${namespace:-fks-trading}
-  
+
   # Create namespace if it doesn't exist
   kubectl create namespace "$namespace" 2>/dev/null || true
-  
+
   # Apply manifests (assuming they exist in k8s/ dir)
   if [ -d "$PROJECT_ROOT/k8s" ]; then
     log_info "Applying Kubernetes manifests from $PROJECT_ROOT/k8s..."
@@ -707,34 +757,34 @@ k8s_start() {
   else
     log_warning "No k8s manifests found in $PROJECT_ROOT/k8s"
   fi
-  
+
   log_success "Kubernetes started"
   log_info "To sync images later, use menu option 11 (Sync Images from Docker Hub)"
 }
 
 k8s_stop() {
   log_info "Stopping Kubernetes..."
-  
+
   # Check if kubectl is available
   if ! command -v kubectl &> /dev/null; then
     log_error "kubectl is not installed"
     return 1
   fi
-  
+
   # Check if minikube is available
   if ! command -v minikube &> /dev/null; then
     log_error "minikube is not installed"
     return 1
   fi
-  
+
   # Delete resources
   if [ -d "$PROJECT_ROOT/k8s" ]; then
     kubectl delete -f "$PROJECT_ROOT/k8s" || log_warning "Failed to delete some resources"
   fi
-  
+
   # Stop minikube
   minikube stop || { log_error "Failed to stop minikube"; return 1; }
-  
+
   log_success "Kubernetes stopped"
 }
 
@@ -763,7 +813,7 @@ handle_all_or_specific() {
   local action_func="$1"
   shift
   local extra_args=("$@")
-  
+
   read -p "All services (a) or specific (s)? " mode
   if [ "$mode" = "a" ]; then
     local failed_services=()
@@ -804,7 +854,7 @@ handle_all_or_specific() {
 # Main loop
 while true; do
   show_menu
-  
+
   case $choice in
     1)
       read -p "Install dependencies? (y/n): " install
@@ -867,8 +917,15 @@ while true; do
       ;;
     11)
       if ! command -v minikube &> /dev/null; then
-        log_error "minikube is not installed"
-      elif ! minikube status &> /dev/null; then
+        log_warning "Minikube not installed."
+        read -p "Install Minikube now? (y/n): " install_choice
+        if [ "$install_choice" = "y" ]; then
+          install_minikube || continue
+        else
+          continue
+        fi
+      fi
+      if ! minikube status &> /dev/null; then
         log_error "minikube is not running. Start it first with option 8"
       else
         read -p "Pull for all services (a) or specific (s)? [a]: " mode
@@ -897,7 +954,13 @@ while true; do
       if ! command -v kubectl &> /dev/null; then
         log_error "kubectl is not installed"
       elif ! command -v minikube &> /dev/null; then
-        log_error "minikube is not installed"
+        log_warning "Minikube not installed."
+        read -p "Install Minikube now? (y/n): " install_choice
+        if [ "$install_choice" = "y" ]; then
+          install_minikube || continue
+        else
+          continue
+        fi
       elif ! minikube status &> /dev/null; then
         log_error "minikube is not running. Start it first with option 8"
       else
