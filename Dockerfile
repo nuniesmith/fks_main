@@ -51,6 +51,9 @@ RUN useradd -u 1000 -m -s /bin/bash appuser
 # Copy binary from builder with correct ownership
 COPY --from=builder --chown=appuser:appuser /app/fks_main /app/fks_main
 
+# Verify binary exists and is executable
+RUN ls -la /app/fks_main && file /app/fks_main || echo "Binary check failed"
+
 # Environment variables
 ENV SERVICE_NAME=fks_main \
     SERVICE_PORT=8010 \
@@ -66,6 +69,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # Expose port
 EXPOSE 8010
 
-# Run service
-CMD ["./fks_main"]
+# Run service with explicit path and error handling
+CMD ["/app/fks_main"]
 

@@ -12,10 +12,23 @@ pub struct MonitorClient {
 
 impl MonitorClient {
     pub fn new(base_url: &str) -> Self {
-        let client = Client::builder()
+        let client = match Client::builder()
             .timeout(Duration::from_secs(10))
-            .build()
-            .expect("Failed to create HTTP client");
+            .build() {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("ERROR: Failed to create HTTP client: {}", e);
+                // Use a dummy client that will fail on requests, but won't panic
+                // This allows the service to start even if the HTTP client fails
+                Client::builder()
+                    .timeout(Duration::from_secs(1))
+                    .build()
+                    .unwrap_or_else(|_| {
+                        eprintln!("CRITICAL: Cannot create HTTP client at all");
+                        std::process::exit(1);
+                    })
+            }
+        };
 
         Self {
             client: Arc::new(client),

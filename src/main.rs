@@ -42,8 +42,22 @@ struct ServiceInfo {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Set up panic hook to capture panics
+    std::panic::set_hook(Box::new(|panic_info| {
+        eprintln!("PANIC: {}", panic_info);
+        if let Some(location) = panic_info.location() {
+            eprintln!("Location: {}:{}:{}", location.file(), location.line(), location.column());
+        }
+        if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            eprintln!("Message: {}", s);
+        }
+    }));
+    
     // Print to stderr immediately (before any initialization)
-    eprintln!("Starting FKS Main Orchestration Service...");
+    // Use std::io::stderr().flush() to ensure output is written
+    use std::io::Write;
+    let _ = std::io::stderr().write_all(b"Starting FKS Main Orchestration Service...\n");
+    let _ = std::io::stderr().flush();
     
     // Initialize tracing first (before any other operations)
     // Use stderr writer to ensure logs appear in docker logs
@@ -51,31 +65,41 @@ async fn main() -> anyhow::Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .with_writer(std::io::stderr)
         .try_init() {
-        eprintln!("WARNING: Failed to initialize tracing: {:?}. Continuing anyway.", e);
+        let _ = std::io::stderr().write_all(format!("WARNING: Failed to initialize tracing: {:?}. Continuing anyway.\n", e).as_bytes());
+        let _ = std::io::stderr().flush();
     }
     
-    eprintln!("Tracing initialized");
+    let _ = std::io::stderr().write_all(b"Tracing initialized\n");
+    let _ = std::io::stderr().flush();
     
     // Initialize crypto provider for rustls (required for rustls 0.23+)
     if let Err(e) = rustls::crypto::ring::default_provider().install_default() {
-        eprintln!("WARNING: Failed to install crypto provider: {:?}. Continuing anyway.", e);
+        let msg = format!("WARNING: Failed to install crypto provider: {:?}. Continuing anyway.\n", e);
+        let _ = std::io::stderr().write_all(msg.as_bytes());
+        let _ = std::io::stderr().flush();
         // Don't fail - rustls might work without this in some cases
     }
     
-    eprintln!("Crypto provider initialized");
+    let _ = std::io::stderr().write_all(b"Crypto provider initialized\n");
+    let _ = std::io::stderr().flush();
     info!("Starting FKS Main Orchestration Service");
 
     // Load configuration
-    eprintln!("Loading configuration...");
+    let _ = std::io::stderr().write_all(b"Loading configuration...\n");
+    let _ = std::io::stderr().flush();
     let config = match AppConfig::load() {
         Ok(cfg) => {
-            eprintln!("Configuration loaded: monitor_url={}, port={}", cfg.monitor_url, cfg.service_port);
+            let msg = format!("Configuration loaded: monitor_url={}, port={}\n", cfg.monitor_url, cfg.service_port);
+            let _ = std::io::stderr().write_all(msg.as_bytes());
+            let _ = std::io::stderr().flush();
             info!("Configuration loaded: monitor_url={}", cfg.monitor_url);
             cfg
         }
         Err(e) => {
+            let msg = format!("ERROR: Failed to load configuration: {}\n", e);
+            let _ = std::io::stderr().write_all(msg.as_bytes());
+            let _ = std::io::stderr().flush();
             error!("Failed to load configuration: {}", e);
-            eprintln!("ERROR: Failed to load configuration: {}", e);
             return Err(e);
         }
     };
@@ -83,40 +107,52 @@ async fn main() -> anyhow::Result<()> {
     // Extract port before moving config
     let service_port = config.service_port;
     let monitor_url = config.monitor_url.clone();
-    eprintln!("Extracted service_port={}, monitor_url={}", service_port, monitor_url);
+    let msg = format!("Extracted service_port={}, monitor_url={}\n", service_port, monitor_url);
+    let _ = std::io::stderr().write_all(msg.as_bytes());
+    let _ = std::io::stderr().flush();
 
     // Initialize Kubernetes client
-    eprintln!("Initializing Kubernetes client...");
+    let _ = std::io::stderr().write_all(b"Initializing Kubernetes client...\n");
+    let _ = std::io::stderr().flush();
     let k8s_client = match Client::try_default().await {
         Ok(client) => {
-            eprintln!("Kubernetes client initialized");
+            let _ = std::io::stderr().write_all(b"Kubernetes client initialized\n");
+            let _ = std::io::stderr().flush();
             info!("Kubernetes client initialized");
             Some(client)
         }
         Err(e) => {
-            eprintln!("WARNING: Kubernetes client not available: {}. Running in non-K8s mode.", e);
+            let msg = format!("WARNING: Kubernetes client not available: {}. Running in non-K8s mode.\n", e);
+            let _ = std::io::stderr().write_all(msg.as_bytes());
+            let _ = std::io::stderr().flush();
             error!("Failed to initialize Kubernetes client: {}. Running in non-K8s mode.", e);
             None
         }
     };
 
     // Initialize monitor client
-    eprintln!("Initializing monitor client with URL: {}", monitor_url);
+    let msg = format!("Initializing monitor client with URL: {}\n", monitor_url);
+    let _ = std::io::stderr().write_all(msg.as_bytes());
+    let _ = std::io::stderr().flush();
     let monitor_client = MonitorClient::new(&monitor_url);
-    eprintln!("Monitor client initialized");
+    let _ = std::io::stderr().write_all(b"Monitor client initialized\n");
+    let _ = std::io::stderr().flush();
 
     // Initialize app state
-    eprintln!("Creating app state...");
+    let _ = std::io::stderr().write_all(b"Creating app state...\n");
+    let _ = std::io::stderr().flush();
     let app_state = AppState {
         config,
         k8s_client,
         monitor_client,
         service_registry: Arc::new(RwLock::new(HashMap::new())),
     };
-    eprintln!("App state created");
+    let _ = std::io::stderr().write_all(b"App state created\n");
+    let _ = std::io::stderr().flush();
 
     // Build router
-    eprintln!("Building router...");
+    let _ = std::io::stderr().write_all(b"Building router...\n");
+    let _ = std::io::stderr().flush();
     let app = Router::new()
         .route("/", get(root))
         .route("/health", get(health))
@@ -131,39 +167,54 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/v1/k8s/deployments", get(list_deployments))
         .layer(CorsLayer::permissive())
         .with_state(app_state);
+    let _ = std::io::stderr().write_all(b"Router built\n");
+    let _ = std::io::stderr().flush();
 
     // Start server
-    eprintln!("Starting server on port {}...", service_port);
+    let msg = format!("Starting server on port {}...\n", service_port);
+    let _ = std::io::stderr().write_all(msg.as_bytes());
+    let _ = std::io::stderr().flush();
     let addr = format!("0.0.0.0:{}", service_port);
     info!("Listening on {}", addr);
-    eprintln!("FKS Main service listening on {}", addr);
+    let msg = format!("FKS Main service listening on {}\n", addr);
+    let _ = std::io::stderr().write_all(msg.as_bytes());
+    let _ = std::io::stderr().flush();
     
     let listener = match tokio::net::TcpListener::bind(&addr).await {
         Ok(l) => {
-            eprintln!("Successfully bound to {}", addr);
+            let msg = format!("Successfully bound to {}\n", addr);
+            let _ = std::io::stderr().write_all(msg.as_bytes());
+            let _ = std::io::stderr().flush();
             info!("Successfully bound to {}", addr);
             l
         }
         Err(e) => {
-            eprintln!("ERROR: Failed to bind to {}: {}", addr, e);
+            let msg = format!("ERROR: Failed to bind to {}: {}\n", addr, e);
+            let _ = std::io::stderr().write_all(msg.as_bytes());
+            let _ = std::io::stderr().flush();
             error!("Failed to bind to {}: {}", addr, e);
             return Err(anyhow::anyhow!("Failed to bind to {}: {}", addr, e));
         }
     };
     
-    eprintln!("Server starting...");
+    let _ = std::io::stderr().write_all(b"Server starting...\n");
+    let _ = std::io::stderr().flush();
     info!("Server starting...");
-    eprintln!("FKS Main service is ready and accepting connections");
-    eprintln!("Waiting for incoming connections...");
+    let _ = std::io::stderr().write_all(b"FKS Main service is ready and accepting connections\n");
+    let _ = std::io::stderr().write_all(b"Waiting for incoming connections...\n");
+    let _ = std::io::stderr().flush();
     
     // Use spawn to ensure the server runs
     match axum::serve(listener, app).await {
         Ok(_) => {
-            eprintln!("Server stopped normally");
+            let _ = std::io::stderr().write_all(b"Server stopped normally\n");
+            let _ = std::io::stderr().flush();
             Ok(())
         }
         Err(e) => {
-            eprintln!("ERROR: Server error: {}", e);
+            let msg = format!("ERROR: Server error: {}\n", e);
+            let _ = std::io::stderr().write_all(msg.as_bytes());
+            let _ = std::io::stderr().flush();
             error!("Server error: {}", e);
             Err(anyhow::anyhow!("Server error: {}", e))
         }
