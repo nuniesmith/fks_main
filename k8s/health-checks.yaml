@@ -1,10 +1,10 @@
-# Health check configuration for fks_main
+# Health check configuration for fks-main
 # Use this in your Deployment spec
 
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fks_main-health-config
+  name: fks-main-health-config
   namespace: fks-trading
 data:
   liveness_probe: |
@@ -30,21 +30,21 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fks_main
+  name: fks-main
   namespace: fks-trading
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: fks_main
+      app: fks-main
   template:
     metadata:
       labels:
-        app: fks_main
+        app: fks-main
     spec:
       containers:
-      - name: fks_main
-        image: nuniesmith/fks_main:latest
+      - name: fks-main
+        image: nuniesmith/fks:main-latest
         ports:
         - containerPort: 8010
         livenessProbe:

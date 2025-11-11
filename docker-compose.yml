@@ -8,14 +8,20 @@ services:
     container_name: fks-main
     ports:
       - "8010:8010"
+    volumes:
+      # Mount central config (read-only)
+      - ./config:/app/config:ro
     environment:
       - SERVICE_NAME=fks_main
       - SERVICE_PORT=8010
-      - MONITOR_URL=http://fks-monitor:8009
+      - FKS_CONFIG_PATH=/app/config/services/fks_main.yaml
+      - MONITOR_URL=http://fks-monitor:8013
       - K8S_NAMESPACE=fks-trading
       - DOMAIN=fkstrading.xyz
       - TLS_ENABLED=false
       - RUST_LOG=info
+      # Logs stored inside container at /app/logs (not mounted externally)
+      # Access via: docker logs fks-main
     networks:
       - fks-network
     # Note: fks-monitor is defined below, but dependency is optional
@@ -28,19 +34,38 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
 
   fks-monitor:
     image: nuniesmith/fks_monitor:latest
     container_name: fks-monitor
     ports:
-      - "8009:8009"
+      - "8013:8013"
+    volumes:
+      # Mount central config and monitor config
+      - ./config:/app/config:ro
+      - ./monitor/config:/app/config:ro
     environment:
-      - MONITOR_PORT=8009
+      - MONITOR_PORT=8013
+      - FKS_CONFIG_PATH=/app/config/services/fks_monitor.yaml
       - PROMETHEUS_URL=http://prometheus:9090
       - GRAFANA_URL=http://grafana:3000
+      # Logs stored inside container at /app/logs (not mounted externally)
+      # Access via: docker logs fks-monitor
     networks:
       - fks-network
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
 
 networks:
   fks-network:

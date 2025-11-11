@@ -1,7 +1,16 @@
 {
-  "version": "1.0",
-  "updated": "2025-11-08T08:21:07.574935",
+  "version": "1.1",
+  "updated": "2025-01-15T00:00:00.000000",
   "services": {
+    "fks_web": {
+      "name": "fks_web",
+      "port": 8000,
+      "base_url": "http://fks_web:8000",
+      "health_url": "http://fks_web:8000/health",
+      "dependencies": [
+        "fks_api"
+      ]
+    },
     "fks_api": {
       "name": "fks_api",
       "port": 8001,
@@ -31,21 +40,22 @@
     },
     "fks_execution": {
       "name": "fks_execution",
-      "port": 8006,
-      "base_url": "http://fks_execution:8006",
-      "health_url": "http://fks_execution:8006/health",
+      "port": 8004,
+      "base_url": "http://fks_execution:8004",
+      "health_url": "http://fks_execution:8004/health",
       "dependencies": [
         "fks_api",
         "fks_data"
       ]
     },
-    "fks_web": {
-      "name": "fks_web",
-      "port": 8000,
-      "base_url": "http://fks_web:8000",
-      "health_url": "http://fks_web:8000/health",
+    "fks_meta": {
+      "name": "fks_meta",
+      "port": 8005,
+      "base_url": "http://fks_meta:8005",
+      "health_url": "http://fks_meta:8005/health",
       "dependencies": [
-        "fks_api"
+        "fks_execution",
+        "fks_data"
       ]
     },
     "fks_ai": {
@@ -67,14 +77,12 @@
         "fks_ai"
       ]
     },
-    "fks_monitor": {
-      "name": "fks_monitor",
+    "fks_auth": {
+      "name": "fks_auth",
       "port": 8009,
-      "base_url": "http://fks_monitor:8009",
-      "health_url": "http://fks_monitor:8009/health",
-      "dependencies": [
-        "all"
-      ]
+      "base_url": "http://fks_auth:8009",
+      "health_url": "http://fks_auth:8009/health",
+      "dependencies": []
     },
     "fks_main": {
       "name": "fks_main",
@@ -85,6 +93,16 @@
         "fks_monitor"
       ]
     },
+    "fks_training": {
+      "name": "fks_training",
+      "port": 8011,
+      "base_url": "http://fks_training:8011",
+      "health_url": "http://fks_training:8011/health",
+      "dependencies": [
+        "fks_data",
+        "fks_ai"
+      ]
+    },
     "fks_portfolio": {
       "name": "fks_portfolio",
       "port": 8012,
@@ -93,6 +111,15 @@
       "dependencies": [
         "fks_data",
         "fks_ai"
+      ]
+    },
+    "fks_monitor": {
+      "name": "fks_monitor",
+      "port": 8013,
+      "base_url": "http://fks_monitor:8013",
+      "health_url": "http://fks_monitor:8013/health",
+      "dependencies": [
+        "all"
       ]
     }
   }

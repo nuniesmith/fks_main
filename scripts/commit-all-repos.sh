@@ -28,6 +28,7 @@ REPOS=(
     "repo/execution"
     "repo/main"
     "repo/meta"
+    "repo/monitor"
     "repo/ninja"
     "repo/portfolio"
     "repo/training"

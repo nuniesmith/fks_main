@@ -14,9 +14,15 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$SCRIPT_DIR"
-FKS_ROOT="$(cd "$PROJECT_ROOT/.." && pwd)"
+# Resolve symlink to actual script location (allows running from root via symlink)
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SCRIPT_SOURCE" ]; do
+    SCRIPT_SOURCE="$(readlink -f "$SCRIPT_SOURCE")"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+# FKS_ROOT is the directory containing the repo/ directory (two levels up from repo/main)
+FKS_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_DIR="$FKS_ROOT/repo"
 DOCKER_USERNAME="${DOCKER_USERNAME:-nuniesmith}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
@@ -31,6 +37,8 @@ SERVICES=(
     "execution"
     "main"
     "meta"
+    "monitor"
+    "portfolio"
     "ninja"
     "training"
     "web"
@@ -72,7 +80,7 @@ check_prerequisites() {
 # Build a single service
 build_service() {
     local service=$1
-    local service_dir="$FKS_ROOT/repo/$service"
+    local service_dir="$REPO_DIR/$service"
     local image_name="$DOCKER_USERNAME/fks:$service-$IMAGE_TAG"
     
     if [ ! -d "$service_dir" ]; then
@@ -156,7 +164,7 @@ start_all_compose() {
         log_warning "Unified start script not found, starting services individually..."
         # Start each service's docker-compose
         for service in "${SERVICES[@]}"; do
-            local service_dir="$FKS_ROOT/repo/$service"
+            local service_dir="$REPO_DIR/$service"
             if [ -f "$service_dir/docker-compose.yml" ]; then
                 log_info "Starting $service..."
                 cd "$service_dir"
@@ -301,7 +309,7 @@ main() {
     esac
 }
 
-# Run main
-cd "$PROJECT_ROOT"
+# Run main (change to FKS_ROOT for consistency)
+cd "$FKS_ROOT"
 main "$@"
 

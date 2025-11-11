@@ -43,6 +43,17 @@
 
 ## 📊 Project Documentation
 
+### Phase 1: Stabilization (Complete ✅)
+- **PHASE-1-FINAL-STATUS.md** - Complete Phase 1 summary
+- **PHASE-1-PORT-FIXES-SUMMARY.md** - Port conflict resolution
+- **PHASE-1-ACTION-PLAN.md** - Detailed action plan
+- **PHASE-1-CLEANUP-PROGRESS.md** - Codebase cleanup analysis
+- **PHASE-1-DEPENDENCY-RECOMMENDATIONS.md** - Dependency audit and fixes
+- **QUICK-START-GUIDE.md** - Quick reference for service ports
+- **HEALTH_VERIFICATION_SUMMARY.md** - Health endpoint verification
+
+**Status**: All Phase 1 stabilization tasks complete. Foundation ready for Phase 2.
+
 ### Project Review
 - **FKS_PROJECT_REVIEW.md** - Comprehensive review of all FKS services and portfolio platform
 
@@ -89,6 +100,41 @@ todo/
 - RAG: `16-RAG-IMPLEMENTATION-GUIDE.md`
 - PPO Meta-Learning: `18-PPO-META-LEARNING-IMPLEMENTATION.md`
 - MetaTrader Bridge: `12-METATRADER-BRIDGE-PLAN.md`
+
+### Phase 1: Stabilization (Complete ✅)
+- Final Status: `PHASE-1-FINAL-STATUS.md`
+- Quick Start: `QUICK-START-GUIDE.md`
+- Port Fixes: `PHASE-1-PORT-FIXES-SUMMARY.md`
+
+### Phase 2: Demo Build (Complete ✅)
+- Complete Summary: `PHASE-2-COMPLETE-SUMMARY.md`
+- Data Flow: `PHASE-2-DATA-FLOW-COMPLETE.md`
+- Signal Pipeline: `PHASE-2-SIGNAL-PIPELINE-COMPLETE.md`
+- Dashboard: `PHASE-2-DASHBOARD-COMPLETE.md`
+- Getting Started: `PHASE-2-START.md`
+
+### Project Status & Next Steps
+- Current Status: `PROJECT-STATUS-2025-01-15.md`
+- Next Steps: `NEXT-STEPS-2025-01-15.md`
+- Quick Reference: `QUICK-REFERENCE.md`
+- Session Summary: `SESSION-SUMMARY-2025-01-15.md`
+
+### Phase 3: Signal Generation Intelligence (In Progress)
+- Strategies Complete: `PHASE-3-STRATEGIES-COMPLETE.md`
+
+### Portfolio Optimization (2025)
+- Optimization Plan: `PORTFOLIO-OPTIMIZATION-2025.md`
+- Allocation Calculator: `PORTFOLIO-ALLOCATION-CALCULATOR.md`
+- Tracking Implementation: `PORTFOLIO-TRACKING-IMPLEMENTATION.md`
+- ESG Integration: `ESG-IMPACT-INTEGRATION-2025.md`
+- ESG Update: `PORTFOLIO-OPTIMIZATION-ESG-UPDATE.md`
+- Account Structure: `PORTFOLIO-STRUCTURE-ACCOUNTS.md`
+- Phase 1 Implementation: `PHASE-1-IMPLEMENTATION.md`
+- Phase 1 Quick Start: `PHASE-1-QUICK-START.md`
+- Phase 1 Templates:
+  - Account Inventory: `PHASE-1-ACCOUNT-INVENTORY-TEMPLATE.md`
+  - Risk Assessment: `PHASE-1-RISK-ASSESSMENT-QUESTIONNAIRE.md`
+  - Portfolio Audit: `PHASE-1-PORTFOLIO-AUDIT-CHECKLIST.md`
 
 ### Project Overview
 - Comprehensive Review: `FKS_PROJECT_REVIEW.md`

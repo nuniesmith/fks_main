@@ -1,11 +1,13 @@
 # Docker Compose override for GPU support and production enhancements
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+# 
+# NOTE: This file is for legacy monorepo setup. Log volumes removed.
+# Logs now stored inside containers at /app/logs (access via docker logs)
 
 services:
   web:
-    volumes:
-      - ./logs/nginx:/var/log/nginx
-      - ./logs/gunicorn:/var/log/gunicorn
+    # Logs stored inside container, not mounted externally
+    # Access via: docker logs fks_web
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
@@ -13,8 +15,8 @@ services:
              --bind 0.0.0.0:8000 
              --workers 4 
              --timeout 120 
-             --access-logfile /var/log/gunicorn/access.log 
-             --error-logfile /var/log/gunicorn/error.log"
+             --access-logfile /app/logs/gunicorn/access.log 
+             --error-logfile /app/logs/gunicorn/error.log"
     depends_on:
       db:
         condition: service_healthy
@@ -33,8 +35,8 @@ services:
         max-file: "3"
 
   db:
-    volumes:
-      - ./logs/postgres:/var/log/postgresql
+    # Logs stored inside container at /var/log/postgresql
+    # Access via: docker logs fks_db
     command: >
       postgres 
       -c shared_preload_libraries='timescaledb,vector' 
@@ -56,8 +58,8 @@ services:
         max-file: "3"
 
   redis:
-    volumes:
-      - ./logs/redis:/var/log/redis
+    # Logs stored inside container
+    # Access via: docker logs fks_redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -71,8 +73,8 @@ services:
         max-file: "3"
 
   celery_worker:
-    volumes:
-      - ./logs/celery:/var/log/celery
+    # Logs stored inside container at /app/logs/celery
+    # Access via: docker logs fks_celery_worker
     depends_on:
       db:
         condition: service_healthy
@@ -91,8 +93,8 @@ services:
         max-file: "3"
 
   celery_beat:
-    volumes:
-      - ./logs/celery:/var/log/celery
+    # Logs stored inside container at /app/logs/celery
+    # Access via: docker logs fks_celery_beat
     depends_on:
       db:
         condition: service_healthy
@@ -152,7 +154,8 @@ services:
         - SERVICE_DIR=./src/services/ai
     volumes:
       # Don't mount source code - use built image
-      - ./logs/ai:/app/logs
+      # Logs stored inside container at /app/logs
+      # Access via: docker logs fks_ai
       - ~/.cache/huggingface:/root/.cache/huggingface
     environment:
       - USE_LOCAL_LLM=true
@@ -192,8 +195,8 @@ services:
     command: python -m src.rag.server
     volumes:
       - ./src:/app
-      - ./logs:/app/logs
-      - ./logs/rag:/var/log/rag
+      # Logs stored inside container at /app/logs
+      # Access via: docker logs fks_rag_gpu
       - ~/.ollama:/root/.ollama  # Ollama models cache
       - ~/.cache/huggingface:/root/.cache/huggingface  # HuggingFace models cache
     environment:
