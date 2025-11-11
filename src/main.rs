@@ -42,21 +42,34 @@ struct ServiceInfo {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Initialize crypto provider for rustls (required for rustls 0.23+)
-    rustls::crypto::ring::default_provider()
-        .install_default()
-        .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
-    
-    // Initialize tracing
+    // Initialize tracing first (before any other operations)
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_writer(std::io::stderr)
         .init();
 
+    eprintln!("Starting FKS Main Orchestration Service...");
+    
+    // Initialize crypto provider for rustls (required for rustls 0.23+)
+    if let Err(e) = rustls::crypto::ring::default_provider().install_default() {
+        eprintln!("WARNING: Failed to install crypto provider: {:?}. Continuing anyway.", e);
+        // Don't fail - rustls might work without this in some cases
+    }
+    
     info!("Starting FKS Main Orchestration Service");
 
     // Load configuration
-    let config = AppConfig::load()?;
-    info!("Configuration loaded: monitor_url={}", config.monitor_url);
+    let config = match AppConfig::load() {
+        Ok(cfg) => {
+            info!("Configuration loaded: monitor_url={}", cfg.monitor_url);
+            cfg
+        }
+        Err(e) => {
+            error!("Failed to load configuration: {}", e);
+            eprintln!("ERROR: Failed to load configuration: {}", e);
+            return Err(e);
+        }
+    };
 
     // Initialize Kubernetes client
     let k8s_client = match Client::try_default().await {
@@ -98,11 +111,30 @@ async fn main() -> anyhow::Result<()> {
         .with_state(app_state);
 
     // Start server
-    let addr = "0.0.0.0:8010";
+    let addr = format!("0.0.0.0:{}", config.service_port);
     info!("Listening on {}", addr);
+    eprintln!("FKS Main service listening on {}", addr);
     
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    let listener = match tokio::net::TcpListener::bind(&addr).await {
+        Ok(l) => {
+            info!("Successfully bound to {}", addr);
+            l
+        }
+        Err(e) => {
+            error!("Failed to bind to {}: {}", addr, e);
+            eprintln!("ERROR: Failed to bind to {}: {}", addr, e);
+            return Err(anyhow::anyhow!("Failed to bind to {}: {}", addr, e));
+        }
+    };
+    
+    info!("Server starting...");
+    eprintln!("FKS Main service is ready and accepting connections");
+    
+    if let Err(e) = axum::serve(listener, app).await {
+        error!("Server error: {}", e);
+        eprintln!("ERROR: Server error: {}", e);
+        return Err(anyhow::anyhow!("Server error: {}", e));
+    }
 
     Ok(())
 }

@@ -46,9 +46,29 @@ jobs:
       - name: Test Docker image
         run: |
           set +e
-          docker run -d --name ${SERVICE_NAME}_test -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} ${{ env.SERVICE_NAME }}:latest
-
+          
+          echo "Starting container..."
+          docker run -d \
+            --name ${SERVICE_NAME}_test \
+            -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
+            -e SERVICE_NAME=fks_main \
+            -e SERVICE_PORT=${{ env.SERVICE_PORT }} \
+            -e MONITOR_URL=http://localhost:8013 \
+            -e K8S_NAMESPACE=fks-trading \
+            -e RUST_LOG=info \
+            ${{ env.SERVICE_NAME }}:latest
+          
+          echo "Container started. Checking status..."
+          sleep 3
+          
+          echo "Container logs (first 50 lines):"
+          docker logs ${SERVICE_NAME}_test 2>&1 | head -50
+          
+          echo "Container status:"
+          docker ps -a | grep ${SERVICE_NAME}_test || echo "Container not found"
+          
           echo "Waiting for service to start..."
+          HEALTHY=false
           for i in {1..30}; do
             sleep 2
             if curl -f http://localhost:${{ env.SERVICE_PORT }}/health >/dev/null 2>&1; then
@@ -57,19 +77,29 @@ jobs:
               break
             fi
             echo "  Attempt $i/30: Service not ready yet..."
+            # Show logs every 5 attempts
+            if [ $((i % 5)) -eq 0 ]; then
+              echo "  Recent logs:"
+              docker logs --tail 10 ${SERVICE_NAME}_test 2>&1
+            fi
           done
 
           if [ "${HEALTHY}" != "true" ]; then
             echo "✗ Service failed to become healthy"
-            echo "Container logs:"
-            docker logs ${SERVICE_NAME}_test
+            echo "Full container logs:"
+            docker logs ${SERVICE_NAME}_test 2>&1
+            echo ""
             echo "Container status:"
             docker ps -a | grep ${SERVICE_NAME}_test
+            echo ""
+            echo "Checking if port is listening:"
+            netstat -tuln | grep ${{ env.SERVICE_PORT }} || echo "Port not listening"
             docker stop ${SERVICE_NAME}_test 2>/dev/null || true
             docker rm ${SERVICE_NAME}_test 2>/dev/null || true
             exit 1
           fi
 
+          echo "✓ Service is healthy. Stopping container..."
           docker stop ${SERVICE_NAME}_test
           docker rm ${SERVICE_NAME}_test
           echo "✓ Docker test passed"
