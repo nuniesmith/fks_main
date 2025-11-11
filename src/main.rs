@@ -42,13 +42,19 @@ struct ServiceInfo {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Print to stderr immediately (before any initialization)
+    eprintln!("Starting FKS Main Orchestration Service...");
+    
     // Initialize tracing first (before any other operations)
-    tracing_subscriber::fmt()
+    // Use stderr writer to ensure logs appear in docker logs
+    if let Err(e) = tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .with_writer(std::io::stderr)
-        .init();
-
-    eprintln!("Starting FKS Main Orchestration Service...");
+        .try_init() {
+        eprintln!("WARNING: Failed to initialize tracing: {:?}. Continuing anyway.", e);
+    }
+    
+    eprintln!("Tracing initialized");
     
     // Initialize crypto provider for rustls (required for rustls 0.23+)
     if let Err(e) = rustls::crypto::ring::default_provider().install_default() {
@@ -56,11 +62,14 @@ async fn main() -> anyhow::Result<()> {
         // Don't fail - rustls might work without this in some cases
     }
     
+    eprintln!("Crypto provider initialized");
     info!("Starting FKS Main Orchestration Service");
 
     // Load configuration
+    eprintln!("Loading configuration...");
     let config = match AppConfig::load() {
         Ok(cfg) => {
+            eprintln!("Configuration loaded: monitor_url={}, port={}", cfg.monitor_url, cfg.service_port);
             info!("Configuration loaded: monitor_url={}", cfg.monitor_url);
             cfg
         }
@@ -71,30 +80,43 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    // Extract port before moving config
+    let service_port = config.service_port;
+    let monitor_url = config.monitor_url.clone();
+    eprintln!("Extracted service_port={}, monitor_url={}", service_port, monitor_url);
+
     // Initialize Kubernetes client
+    eprintln!("Initializing Kubernetes client...");
     let k8s_client = match Client::try_default().await {
         Ok(client) => {
+            eprintln!("Kubernetes client initialized");
             info!("Kubernetes client initialized");
             Some(client)
         }
         Err(e) => {
+            eprintln!("WARNING: Kubernetes client not available: {}. Running in non-K8s mode.", e);
             error!("Failed to initialize Kubernetes client: {}. Running in non-K8s mode.", e);
             None
         }
     };
 
     // Initialize monitor client
-    let monitor_client = MonitorClient::new(&config.monitor_url);
+    eprintln!("Initializing monitor client with URL: {}", monitor_url);
+    let monitor_client = MonitorClient::new(&monitor_url);
+    eprintln!("Monitor client initialized");
 
     // Initialize app state
+    eprintln!("Creating app state...");
     let app_state = AppState {
         config,
         k8s_client,
         monitor_client,
         service_registry: Arc::new(RwLock::new(HashMap::new())),
     };
+    eprintln!("App state created");
 
     // Build router
+    eprintln!("Building router...");
     let app = Router::new()
         .route("/", get(root))
         .route("/health", get(health))
@@ -111,32 +133,41 @@ async fn main() -> anyhow::Result<()> {
         .with_state(app_state);
 
     // Start server
-    let addr = format!("0.0.0.0:{}", config.service_port);
+    eprintln!("Starting server on port {}...", service_port);
+    let addr = format!("0.0.0.0:{}", service_port);
     info!("Listening on {}", addr);
     eprintln!("FKS Main service listening on {}", addr);
     
     let listener = match tokio::net::TcpListener::bind(&addr).await {
         Ok(l) => {
+            eprintln!("Successfully bound to {}", addr);
             info!("Successfully bound to {}", addr);
             l
         }
         Err(e) => {
-            error!("Failed to bind to {}: {}", addr, e);
             eprintln!("ERROR: Failed to bind to {}: {}", addr, e);
+            error!("Failed to bind to {}: {}", addr, e);
             return Err(anyhow::anyhow!("Failed to bind to {}: {}", addr, e));
         }
     };
     
+    eprintln!("Server starting...");
     info!("Server starting...");
     eprintln!("FKS Main service is ready and accepting connections");
+    eprintln!("Waiting for incoming connections...");
     
-    if let Err(e) = axum::serve(listener, app).await {
-        error!("Server error: {}", e);
-        eprintln!("ERROR: Server error: {}", e);
-        return Err(anyhow::anyhow!("Server error: {}", e));
+    // Use spawn to ensure the server runs
+    match axum::serve(listener, app).await {
+        Ok(_) => {
+            eprintln!("Server stopped normally");
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("ERROR: Server error: {}", e);
+            error!("Server error: {}", e);
+            Err(anyhow::anyhow!("Server error: {}", e))
+        }
     }
-
-    Ok(())
 }
 
 async fn root() -> Json<serde_json::Value> {

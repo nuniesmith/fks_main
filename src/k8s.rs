@@ -28,14 +28,14 @@ impl K8sManager {
         Ok(pods.items)
     }
 
-    pub async fn scale_deployment(&self, name: &str, replicas: i32) -> Result<()> {
-        let api: Api<Deployment> = Api::namespaced(self.client.clone(), &self.namespace);
+    pub async fn scale_deployment(&self, _name: &str, _replicas: i32) -> Result<()> {
+        let _api: Api<Deployment> = Api::namespaced(self.client.clone(), &self.namespace);
         // Scale deployment logic here
         Ok(())
     }
 
-    pub async fn restart_deployment(&self, name: &str) -> Result<()> {
-        let api: Api<Deployment> = Api::namespaced(self.client.clone(), &self.namespace);
+    pub async fn restart_deployment(&self, _name: &str) -> Result<()> {
+        let _api: Api<Deployment> = Api::namespaced(self.client.clone(), &self.namespace);
         // Restart deployment logic here
         Ok(())
     }
