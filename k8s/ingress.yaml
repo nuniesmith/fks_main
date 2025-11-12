@@ -49,8 +49,26 @@ spec:
             port:
               number: 8002
       
+      # Bitcoin signal endpoints (direct routing to app service)
+      - path: /api/v1/signals(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-app
+            port:
+              number: 8002
+      
       # Data service
       - path: /data(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-data
+            port:
+              number: 8003
+      
+      # Data API endpoints (direct routing to data service)
+      - path: /api/v1/data(/|$)(.*)
         pathType: ImplementationSpecific
         backend:
           service:
@@ -66,6 +84,60 @@ spec:
             name: fks-execution
             port:
               number: 8004
+      
+      # Auth service
+      - path: /auth(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-auth
+            port:
+              number: 8009
+      
+      # Portfolio service
+      - path: /portfolio(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-portfolio
+            port:
+              number: 8012
+      
+      # Monitor service
+      - path: /monitor(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-monitor
+            port:
+              number: 8013
+      
+      # Meta service
+      - path: /meta(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-meta
+            port:
+              number: 8005
+      
+      # Analyze service
+      - path: /analyze(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-analyze
+            port:
+              number: 8008
+      
+      # Training service
+      - path: /training(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-training
+            port:
+              number: 8011
       
       # Grafana dashboard
       - path: /grafana(/|$)(.*)

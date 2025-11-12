@@ -1,0 +1,317 @@
+# FKS Trading Platform - Helm Chart Values
+# Configuration for fkstrading.xyz domain with Tailscale IP
+
+# Global settings
+global:
+  environment: production
+  domain: fkstrading.xyz
+  timezone: UTC
+  
+  # Image registry
+  imageRegistry: docker.io
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+  
+  # Storage class
+  storageClass: standard
+  
+  # Resource limits (default - can be overridden per service)
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+# Service-specific configurations
+fks_main:
+  enabled: true
+  name: fks-main
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: main-latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1536Mi
+    requests:
+      cpu: 200m
+      memory: 768Mi
+  
+  env:
+    - name: DJANGO_SETTINGS_MODULE
+      value: "services.web.src.django.settings"
+    - name: ALLOWED_HOSTS
+      value: "fkstrading.xyz,*.fkstrading.xyz,localhost,127.0.0.1,100.80.141.117"
+    - name: DEBUG
+      value: "False"
+    - name: REDIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-redis
+          key: redis-password
+    - name: REDIS_URL
+      value: "redis://:$(REDIS_PASSWORD)@fks-platform-redis-master:6379/1"
+    - name: CELERY_BROKER_URL
+      value: "redis://:$(REDIS_PASSWORD)@fks-platform-redis-master:6379/0"
+    - name: CELERY_RESULT_BACKEND
+      value: "redis://:$(REDIS_PASSWORD)@fks-platform-redis-master:6379/0"
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: DATABASE_URL
+      value: "postgresql://fks_user:$(POSTGRES_PASSWORD)@fks-platform-postgresql:5432/fks_db"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+fks_api:
+  enabled: true
+  name: fks-api
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: api-latest
+  
+  service:
+    type: ClusterIP
+    port: 8001
+    targetPort: 8001
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+
+fks_app:
+  enabled: true
+  name: fks-app
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: app-latest
+  
+  service:
+    type: ClusterIP
+    port: 8002
+    targetPort: 8002
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 1Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetMemoryUtilizationPercentage: 80
+
+fks_data:
+  enabled: true
+  name: fks-data
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: data-latest
+  
+  service:
+    type: ClusterIP
+    port: 8003
+    targetPort: 8003
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 1Gi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetMemoryUtilizationPercentage: 80
+
+fks_ai:
+  enabled: false
+  name: fks-ai
+  replicaCount: 1
+  image:
+    repository: nuniesmith/fks
+    tag: ai-latest
+  
+  service:
+    type: ClusterIP
+    port: 8007
+    targetPort: 8007
+
+fks_execution:
+  enabled: false
+  name: fks-execution
+  replicaCount: 1
+  image:
+    repository: nuniesmith/fks
+    tag: execution-latest
+  
+  service:
+    type: ClusterIP
+    port: 8004
+    targetPort: 8004
+
+fks_web:
+  enabled: false
+  name: fks-web
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: web-latest
+  
+  service:
+    type: ClusterIP
+    port: 3001
+    targetPort: 3001
+
+fks_ninja:
+  enabled: false
+  name: fks-ninja
+  replicaCount: 1
+  image:
+    repository: nuniesmith/fks
+    tag: ninja-latest
+  
+  service:
+    type: ClusterIP
+    port: 8005
+    targetPort: 8005
+
+# PostgreSQL (TimescaleDB)
+postgresql:
+  enabled: true
+  auth:
+    username: fks_user
+    password: ""  # Set via secrets
+    database: fks_db
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: standard
+    
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 2Gi
+  
+  # Enable TimescaleDB extension
+  image:
+    repository: timescale/timescaledb-ha
+    tag: pg14-latest
+  
+  # Streaming replication for HA
+  replication:
+    enabled: true
+    numSynchronousReplicas: 1
+    synchronousCommit: "on"
+
+# Redis
+redis:
+  enabled: true
+  
+  # Override image to use latest
+  image:
+    registry: docker.io
+    repository: bitnami/redis
+    tag: latest
+  
+  auth:
+    enabled: true
+    password: ""  # Set via secrets
+  
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+  
+  # Redis Sentinel for HA
+  sentinel:
+    enabled: false
+    quorum: 2
+
+# Ingress configuration for fkstrading.xyz
+# Note: We'll use the existing ingress.yaml file instead of Helm template
+# This allows more flexible routing with regex patterns
+ingress:
+  enabled: false  # Disabled - using existing ingress.yaml file instead
+
+# Monitoring
+prometheus:
+  enabled: false  # Disabled for now
+
+grafana:
+  enabled: false  # Disabled for now
+
+# Network policies
+networkPolicy:
+  enabled: false  # Disabled for now
+
+# Pod security
+podSecurityPolicy:
+  enabled: false
+
+# Service mesh (optional)
+serviceMesh:
+  enabled: false
+
+# Backup configuration
+backup:
+  enabled: false  # Disabled for now
+

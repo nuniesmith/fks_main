@@ -111,11 +111,46 @@ fks_api:
       cpu: 100m
       memory: 256Mi
   
+  env:
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: DATA_SERVICE_URL
+      value: "http://fks-data:8003"
+    - name: AUTH_SERVICE_URL
+      value: "http://fks-auth:8009"
+    - name: APP_SERVICE_URL
+      value: "http://fks-app:8002"
+    - name: REDIS_HOST
+      value: "fks-platform-redis-master"
+    - name: REDIS_PORT
+      value: "6379"
+    - name: REDIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-redis
+          key: redis-password
+  
   autoscaling:
     enabled: true
     minReplicas: 2
     maxReplicas: 8
     targetCPUUtilizationPercentage: 70
+  
+  healthCheck:
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
 
 fks_app:
   enabled: true
@@ -214,31 +249,48 @@ fks_data:
       cpu: 200m
       memory: 1Gi
   
+  env:
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: REDIS_HOST
+      value: "fks-platform-redis-master"
+    - name: REDIS_PORT
+      value: "6379"
+    - name: REDIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-redis
+          key: redis-password
+  
   autoscaling:
     enabled: true
     minReplicas: 2
     maxReplicas: 4
     targetMemoryUtilizationPercentage: 80
+  
+  healthCheck:
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
 
 fks_execution:
-  enabled: false  # DISABLED - Binary exits immediately, needs rebuild with proper runtime
+  enabled: true  # Enabled - will check if binary works, if not will keep disabled
   name: fks-execution
   replicaCount: 1
   image:
     repository: nuniesmith/fks
     tag: execution-latest
-  
-  # Override command - TEMPORARILY DISABLED for library debugging
-  command:
-    - /bin/sh
-    - -c
-    - |
-      echo "Debugging mode - checking binary"
-      ldd /usr/local/bin/fks_execution || echo "ldd failed"
-      echo "Attempting to run binary..."
-      /usr/local/bin/fks_execution --listen 0.0.0.0:8004 || echo "Binary failed with exit code: $?"
-      echo "Keeping container alive for debugging..."
-      sleep 3600
   
   # Environment variables for Rust service
   env:
@@ -247,9 +299,15 @@ fks_execution:
     - name: RUST_BACKTRACE
       value: "full"
   
-  # Disable health checks temporarily for debugging
+  # Health checks
   healthCheck:
-    enabled: false
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
   
   service:
     type: ClusterIP
@@ -358,6 +416,322 @@ fks_web:
         secretKeyRef:
           name: fks-secrets
           key: database-url
+
+fks_auth:
+  enabled: true
+  name: fks-auth
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: auth-latest
+  
+  service:
+    type: ClusterIP
+    port: 8009
+    targetPort: 8009
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  env:
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: REDIS_HOST
+      value: "fks-platform-redis-master"
+    - name: REDIS_PORT
+      value: "6379"
+    - name: REDIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-redis
+          key: redis-password
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+  
+  healthCheck:
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
+
+fks_portfolio:
+  enabled: true
+  name: fks-portfolio
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: portfolio-latest
+  
+  service:
+    type: ClusterIP
+    port: 8012
+    targetPort: 8012
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 1Gi
+  
+  env:
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: DATA_SERVICE_URL
+      value: "http://fks-data:8003"
+    - name: AI_SERVICE_URL
+      value: "http://fks-ai:8007"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+  
+  healthCheck:
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
+
+fks_monitor:
+  enabled: true
+  name: fks-monitor
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: monitor-latest
+  
+  service:
+    type: ClusterIP
+    port: 8013
+    targetPort: 8013
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  env:
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: REDIS_HOST
+      value: "fks-platform-redis-master"
+    - name: REDIS_PORT
+      value: "6379"
+    - name: REDIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-redis
+          key: redis-password
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+  
+  healthCheck:
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
+
+fks_meta:
+  enabled: true
+  name: fks-meta
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: meta-latest
+  
+  service:
+    type: ClusterIP
+    port: 8005
+    targetPort: 8005
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  env:
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: EXECUTION_SERVICE_URL
+      value: "http://fks-execution:8004"
+    - name: DATA_SERVICE_URL
+      value: "http://fks-data:8003"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+  
+  healthCheck:
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
+
+fks_analyze:
+  enabled: true
+  name: fks-analyze
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: analyze-latest
+  
+  service:
+    type: ClusterIP
+    port: 8008
+    targetPort: 8008
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 1Gi
+  
+  env:
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: DATA_SERVICE_URL
+      value: "http://fks-data:8003"
+    - name: AI_SERVICE_URL
+      value: "http://fks-ai:8007"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+  
+  healthCheck:
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
+
+fks_training:
+  enabled: true
+  name: fks-training
+  replicaCount: 2
+  image:
+    repository: nuniesmith/fks
+    tag: training-latest
+  
+  service:
+    type: ClusterIP
+    port: 8011
+    targetPort: 8011
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  
+  env:
+    - name: POSTGRES_HOST
+      value: "fks-platform-postgresql"
+    - name: POSTGRES_PORT
+      value: "5432"
+    - name: POSTGRES_DB
+      value: "fks_db"
+    - name: POSTGRES_USER
+      value: "fks_user"
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fks-platform-postgresql
+          key: password
+    - name: DATA_SERVICE_URL
+      value: "http://fks-data:8003"
+    - name: AI_SERVICE_URL
+      value: "http://fks-ai:8007"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 70
+  
+  healthCheck:
+    enabled: true
+    livenessPath: /health
+    readinessPath: /health
 
 # PostgreSQL (TimescaleDB)
 postgresql:
