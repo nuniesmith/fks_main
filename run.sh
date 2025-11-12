@@ -1078,8 +1078,8 @@ while true; do
         # Commit all repos
         read -p "All repos (a) or specific (s)? " mode
         if [ "$mode" = "a" ]; then
-          local failed_repos=()
-          local success_count=0
+          failed_repos=()
+          success_count=0
           for repo in "${REPOS[@]}"; do
             log_info "Processing $repo..."
             if commit_push "$repo" "$message" 2>&1; then
