@@ -1,4 +1,0 @@
-# FKS Configuration System - Python Dependencies
-pyyaml>=6.0
-pydantic>=2.0
-

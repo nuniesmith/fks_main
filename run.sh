@@ -30,10 +30,21 @@ DOCKER_USERNAME="nuniesmith"
 DOCKER_REPO="fks"
 DEFAULT_TAG="latest"
 
-# List of all services
+# List of all services (repos that run as services)
 SERVICES=(
   "ai" "analyze" "api" "app" "auth" "data" "execution"
   "main" "meta" "monitor" "portfolio" "ninja" "training" "web"
+)
+
+# List of all repos (includes services + infrastructure + extracted repos)
+REPOS=(
+  # Service repos (14)
+  "ai" "analyze" "api" "app" "auth" "data" "execution"
+  "main" "meta" "monitor" "portfolio" "ninja" "training" "web"
+  # Infrastructure repos
+  "docker" "k8s"
+  # Extracted repos (from main)
+  "docs" "scripts" "nginx" "config"
 )
 
 # Python-based services (for venv management)
@@ -107,7 +118,7 @@ install_minikube() {
   return 0
 }
 
-# Get service path
+# Get service path (alias for get_repo_path for backward compatibility)
 get_service_path() {
   local service="$1"
   echo "$REPO_DIR/$service"
@@ -231,21 +242,28 @@ stop_service() {
   return 0
 }
 
+# Get repo path (works for both services and other repos)
+get_repo_path() {
+  local repo="$1"
+  echo "$REPO_DIR/$repo"
+}
+
 # Commit and push changes (triggers GitHub Actions for Docker build/push)
+# Works for both services and other repos
 commit_push() {
-  local service="$1"
+  local repo="$1"
   local message="${2:-chore: auto update $(date +'%Y-%m-%d %H:%M')}"
 
-  local service_path=$(get_service_path "$service")
-  if [ ! -d "$service_path" ]; then
-    log_error "Service not found: $service"
+  local repo_path=$(get_repo_path "$repo")
+  if [ ! -d "$repo_path" ]; then
+    log_error "Repo not found: $repo"
     return 1
   fi
 
-  cd "$service_path"
+  cd "$repo_path"
 
   if [ ! -d ".git" ]; then
-    log_warning "Not a git repo: $service - skipping"
+    log_warning "Not a git repo: $repo - skipping"
     return 1
   fi
 
@@ -255,22 +273,33 @@ commit_push() {
 
   git add -A
 
-  if git diff --cached --quiet; then
-    log_info "No changes in $service - skipping commit"
+  if git diff --cached --quiet && git diff --quiet; then
+    log_info "No changes in $repo - skipping commit"
+    # Still try to push in case there are unpushed commits
+    if git push origin "$current_branch" 2>&1 | grep -q "Everything up-to-date\|Already up to date"; then
+      log_info "Already up to date on remote"
+    else
+      git push origin "$current_branch" || log_warning "Push failed (may not have remote)"
+    fi
     return 0
   fi
 
-  log_info "Committing changes in $service..."
+  log_info "Committing changes in $repo..."
   git commit -m "$message" || { log_error "Commit failed"; return 1; }
 
-  log_info "Pushing to remote (triggers GitHub Actions build/push)..."
+  log_info "Pushing to remote..."
   # Push to current branch (supports both main and master)
-  git push origin "$current_branch" || { log_error "Push failed"; return 1; }
-
-  log_success "$service committed and pushed to $current_branch"
-  log_info "GitHub Actions will build and push to dockerhub.com/nuniesmith/fks:${service}-latest"
-
-  return 0
+  if git push origin "$current_branch"; then
+    log_success "$repo committed and pushed to $current_branch"
+    # Only mention GitHub Actions for services
+    if [[ " ${SERVICES[*]} " =~ " ${repo} " ]]; then
+      log_info "GitHub Actions will build and push to dockerhub.com/nuniesmith/fks:${repo}-latest"
+    fi
+    return 0
+  else
+    log_error "Push failed for $repo"
+    return 1
+  fi
 }
 
 # Analyze codebase (simplified from provided script)
@@ -960,7 +989,7 @@ show_menu() {
   echo "2. Build Docker Images"
   echo "3. Start Services (Docker Compose)"
   echo "4. Stop Services"
-  echo "5. Commit & Push (Triggers GitHub Actions)"
+  echo "5. Commit & Push (All repos or services only)"
   echo "6. Analyze Codebase"
   echo "7. Check GitHub Actions Status"
   echo "8. Kubernetes Start (Pulls from Docker Hub by default)"
@@ -970,6 +999,8 @@ show_menu() {
   echo "12. Sync Images & Update Kubernetes Deployments"
   echo "13. Access Kubernetes Dashboard"
   echo "14. Exit"
+  echo ""
+  echo -e "${YELLOW}Note:${NC} Services: ${#SERVICES[@]}, Total Repos: ${#REPOS[@]}"
   echo ""
   read -p "Enter choice: " choice
 }
@@ -1039,9 +1070,41 @@ while true; do
       handle_all_or_specific stop_service
       ;;
     5)
+      read -p "Commit all repos (r) or services only (s)? [s]: " repo_mode
+      repo_mode=${repo_mode:-s}
       read -p "Enter commit message (default: chore: auto update): " message
       message=${message:-"chore: auto update"}
-      handle_all_or_specific commit_push "$message"
+      if [ "$repo_mode" = "r" ]; then
+        # Commit all repos
+        read -p "All repos (a) or specific (s)? " mode
+        if [ "$mode" = "a" ]; then
+          local failed_repos=()
+          local success_count=0
+          for repo in "${REPOS[@]}"; do
+            log_info "Processing $repo..."
+            if commit_push "$repo" "$message" 2>&1; then
+              success_count=$((success_count + 1))
+            else
+              failed_repos+=("$repo")
+            fi
+          done
+          echo ""
+          log_info "Completed: $success_count/${#REPOS[@]} repos succeeded"
+          if [ ${#failed_repos[@]} -gt 0 ]; then
+            log_warning "Failed repos: ${failed_repos[*]}"
+          fi
+        else
+          read -p "Enter repo name (comma-separated for multiple): " input_repos
+          IFS=',' read -ra selected <<< "$input_repos"
+          for repo in "${selected[@]}"; do
+            repo=$(echo "$repo" | tr -d ' ')
+            commit_push "$repo" "$message" || log_error "Failed to process $repo"
+          done
+        fi
+      else
+        # Commit services only (original behavior)
+        handle_all_or_specific commit_push "$message"
+      fi
       ;;
     6)
       read -p "Enter directory to analyze (default: $PROJECT_ROOT): " dir
