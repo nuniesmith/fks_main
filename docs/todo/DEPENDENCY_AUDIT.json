@@ -1,0 +1,4023 @@
+{
+  "dependencies": {
+    "fastapi": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.115.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.121.1"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": "any"
+      },
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=0.115.0"
+      },
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=0.104.0"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==0.104.1"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.115.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=0.104.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=0.104.0"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\src\\requirements.txt",
+        "version": "any"
+      }
+    ],
+    "uvicorn": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": "[standard]>=0.32.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": "[standard]>=0.38.0"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": "[standard]"
+      },
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": "[standard]>=0.32.0"
+      },
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": "[standard]>=0.24.0"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "[standard]==0.24.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.32.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": "[standard]>=0.24.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": "[standard]>=0.24.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": "[standard]>=0.27.0"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\src\\requirements.txt",
+        "version": "[standard]"
+      }
+    ],
+    "pydantic": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=2.9.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=2.12.4"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": ">=2"
+      },
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=2.9.0"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==2.5.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=2.5.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=2.0.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.5.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\config\\python\\requirements.txt",
+        "version": ">=2.0"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\src\\requirements.txt",
+        "version": ">=2"
+      }
+    ],
+    "langchain": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.3.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.3.0,<0.4.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.3.0"
+      }
+    ],
+    "langgraph": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.2.0"
+      }
+    ],
+    "langchain-core": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.3.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.3.0,<0.4.0"
+      }
+    ],
+    "langchain-community": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.3.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.3.0,<0.4.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.3.0"
+      }
+    ],
+    "langchain-ollama": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.2.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.1.0,<2.0.0"
+      }
+    ],
+    "ollama": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.3.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.1.0,<1.0.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.4.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=0.1.7"
+      }
+    ],
+    "chromadb": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.5.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.4.0,<1.0.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.5.0"
+      }
+    ],
+    "sentence-transformers": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=3.0.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=2.2.0,<6.0.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.3.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.2.0"
+      }
+    ],
+    "numpy": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=1.26.0"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": ">=1.26.0"
+      },
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=1.26.0,<2.0"
+      },
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=1.26.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.26.0,<2.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=1.24.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=1.23.5,<2.0.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=1.26.0,<2.0"
+      }
+    ],
+    "pandas": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=2.2.0"
+      },
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=2.2.0"
+      },
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=2.2.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.2.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=2.0.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==2.3.2"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.2.0"
+      }
+    ],
+    "httpx": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.25.0"
+      },
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.26.0,<0.29.0"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": "any"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==0.25.2"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=0.25.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=0.25.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=0.25.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=0.26.0"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\src\\requirements.txt",
+        "version": "any"
+      }
+    ],
+    "ta-lib": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.4.28"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.4.28"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=0.4.28"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=0.4.0"
+      }
+    ],
+    "pytest": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=7.4.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=8.3.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=7.4.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=7.4.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=7.4.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=7.4.3"
+      }
+    ],
+    "pytest-asyncio": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=0.21.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.24.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=0.21.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=0.21.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=0.23.2"
+      }
+    ],
+    "pytest-cov": [
+      {
+        "service": "ai",
+        "file": "repo\\ai\\requirements.txt",
+        "version": ">=4.1.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=6.0.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=4.1.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=4.1.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=4.1.0"
+      }
+    ],
+    "pydantic-settings": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=2.11.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=2.1.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.1.0"
+      }
+    ],
+    "python-multipart": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.0.20"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==0.0.6"
+      }
+    ],
+    "typer": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.20.0"
+      }
+    ],
+    "pyyaml": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=6.0.3"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==6.0.1"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=6.0.1"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\config\\python\\requirements.txt",
+        "version": ">=6.0"
+      }
+    ],
+    "tqdm": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=4.67.1"
+      }
+    ],
+    "prometheus-client": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.23.1"
+      },
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=0.20.0"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==0.19.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.21.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=0.19.0"
+      }
+    ],
+    "redis": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=5.0.0,<8.0.0"
+      },
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=5.0.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=5.2.0,<5.3.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=5.2.0"
+      }
+    ],
+    "google-cloud-aiplatform": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=1.43.0,<2.0.0"
+      }
+    ],
+    "json5": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.9.24,<1.0.0"
+      }
+    ],
+    "langchain-text-splitters": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.3.0,<0.4.0"
+      }
+    ],
+    "langchain-google-genai": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=1.0.0,<4.0.0"
+      }
+    ],
+    "google-generativeai": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.3.0,<1.0.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.8.3"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=0.3.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=0.3.0"
+      }
+    ],
+    "pypdf": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=3.17.0,<7.0.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=5.1.0"
+      }
+    ],
+    "python-docx": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=1.2.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.1.2"
+      }
+    ],
+    "markdown": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=3.10"
+      }
+    ],
+    "loguru": [
+      {
+        "service": "analyze",
+        "file": "repo\\analyze\\requirements.txt",
+        "version": ">=0.7.3"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.7.2"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=0.7.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=0.7.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=0.7.2"
+      }
+    ],
+    "requests": [
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": "any"
+      },
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=2.32.0"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==2.31.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.32.3"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=2.31.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.31.0"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\src\\requirements.txt",
+        "version": "any"
+      }
+    ],
+    "orjson": [
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": "any"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\src\\requirements.txt",
+        "version": "any"
+      }
+    ],
+    "celery": [
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": "[redis]>=5.3.0"
+      },
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=5.3.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=5.5.3"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": "[redis]>=5.5.3"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=5.5.3"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": "[redis]>=5.5.3"
+      },
+      {
+        "service": "api",
+        "file": "repo\\api\\src\\requirements.txt",
+        "version": "[redis]>=5.3.0"
+      }
+    ],
+    "pytz": [
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": "any"
+      },
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": "any"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2024.2"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "any"
+      }
+    ],
+    "zoneinfo-backport": [
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": "; python_version < \"3.9\""
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "; python_version < \"3.9\""
+      }
+    ],
+    "mlflow": [
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": ">=3.3.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==3.3.2"
+      }
+    ],
+    "shap": [
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": ">=0.44.0"
+      }
+    ],
+    "aif360": [
+      {
+        "service": "api",
+        "file": "repo\\api\\requirements.txt",
+        "version": ">=0.5.0"
+      }
+    ],
+    "optuna": [
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=4.0.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=4.0.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==4.5.0"
+      }
+    ],
+    "scikit-learn": [
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=1.3.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.5.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==1.7.1"
+      }
+    ],
+    "scipy": [
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=1.11.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.13.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=1.10.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=1.11.0"
+      }
+    ],
+    "ccxt": [
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=4.0.0"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": ">=4.5.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=4.4.0"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=4.0.0"
+      }
+    ],
+    "backtrader": [
+      {
+        "service": "app",
+        "file": "repo\\app\\requirements.txt",
+        "version": ">=1.9.78.123"
+      }
+    ],
+    "sqlalchemy": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=2.0.23"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.0.44"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.0.0"
+      }
+    ],
+    "asyncio": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": "any"
+      }
+    ],
+    "aiofiles": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=23.2.1"
+      }
+    ],
+    "psycopg2-binary": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=2.9.9"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.9.11"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.9.9"
+      }
+    ],
+    "yfinance": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=0.2.28"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.2.48"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=0.2.28"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=0.2.0"
+      }
+    ],
+    "polygon-api-client": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=1.13.5"
+      }
+    ],
+    "alpha-vantage": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=2.3.1"
+      }
+    ],
+    "binance-python": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=0.2.9"
+      }
+    ],
+    "flask": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=3.0.0"
+      }
+    ],
+    "cryptography": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=41.0.0"
+      },
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==41.0.7"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=42.0.0"
+      }
+    ],
+    "gunicorn": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=21.2.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=23.0.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=21.2.0"
+      }
+    ],
+    "gevent": [
+      {
+        "service": "data",
+        "file": "repo\\data\\requirements.txt",
+        "version": ">=23.9.0"
+      }
+    ],
+    "python-jose": [
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "[cryptography]==3.3.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.5.0"
+      }
+    ],
+    "python-dotenv": [
+      {
+        "service": "execution",
+        "file": "repo\\execution\\requirements.txt",
+        "version": "==1.0.0"
+      },
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.1.1"
+      },
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=1.0.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=1.0.1"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=1.0.0"
+      }
+    ],
+    "django": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=5.2.7"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=5.2.7"
+      }
+    ],
+    "djangorestframework": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.16.1"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=3.15.2"
+      }
+    ],
+    "django-cors-headers": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=4.9.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=4.7.0"
+      }
+    ],
+    "django-environ": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.12.0"
+      }
+    ],
+    "whitenoise": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=6.11.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=6.6.0"
+      }
+    ],
+    "dj-static": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.0.6"
+      }
+    ],
+    "dj-database-url": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.0.1"
+      }
+    ],
+    "alembic": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.17.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=1.17.0"
+      }
+    ],
+    "flower": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.0.1"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.0.1"
+      }
+    ],
+    "django-celery-beat": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.8.1"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.8.1"
+      }
+    ],
+    "django-celery-results": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.6.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.6.0"
+      }
+    ],
+    "django-redis": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=6.0.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=6.0.0"
+      }
+    ],
+    "passlib": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.7.4"
+      }
+    ],
+    "djangorestframework-simplejwt": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=5.5.1"
+      }
+    ],
+    "drf-spectacular": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.28.0"
+      }
+    ],
+    "django-filter": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=25.2"
+      }
+    ],
+    "user-agents": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.2.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.2.0"
+      }
+    ],
+    "websocket-client": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.9.0"
+      }
+    ],
+    "websockets": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=15.0.1"
+      }
+    ],
+    "aiohttp": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.13.1"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=3.9.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=3.13.1"
+      }
+    ],
+    "torch": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.4.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==2.8.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=2.0.0"
+      }
+    ],
+    "torchvision": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.19.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==0.23.0"
+      }
+    ],
+    "hmmlearn": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.3.2"
+      }
+    ],
+    "joblib": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.4.0"
+      }
+    ],
+    "xgboost": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.1.0"
+      }
+    ],
+    "lightgbm": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=4.5.0"
+      }
+    ],
+    "autots": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.6.15"
+      }
+    ],
+    "prophet": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.1.5"
+      }
+    ],
+    "statsmodels": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.14.2"
+      }
+    ],
+    "openai": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.54.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=1.12.0"
+      }
+    ],
+    "anthropic": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.39.0"
+      }
+    ],
+    "langchain-openai": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.2.0"
+      }
+    ],
+    "faiss-cpu": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.8.0"
+      }
+    ],
+    "pgvector": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.3.5"
+      }
+    ],
+    "tiktoken": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.8.0"
+      }
+    ],
+    "llama-cpp-python": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.2.90"
+      }
+    ],
+    "transformers": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=4.46.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==4.56.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=4.35.0"
+      }
+    ],
+    "accelerate": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.0.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==1.10.1"
+      }
+    ],
+    "bitsandbytes": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.44.0"
+      }
+    ],
+    "pymupdf": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.24.0"
+      }
+    ],
+    "openpyxl": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.1.5"
+      }
+    ],
+    "optuna-dashboard": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.16.0"
+      }
+    ],
+    "matplotlib": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.9.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==3.10.6"
+      }
+    ],
+    "seaborn": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.13.2"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==0.13.2"
+      }
+    ],
+    "plotly": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=5.24.0"
+      }
+    ],
+    "streamlit": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.40.0"
+      }
+    ],
+    "python-dateutil": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.9.0.post0"
+      }
+    ],
+    "psutil": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=6.1.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=5.9.0"
+      }
+    ],
+    "django-mermaid": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=0.1.0"
+      }
+    ],
+    "django-prometheus": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.3.1"
+      }
+    ],
+    "pytest-django": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=4.9.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=4.7.0"
+      }
+    ],
+    "pytest-mock": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.14.0"
+      },
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=3.11.0"
+      }
+    ],
+    "faker": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=30.8.0"
+      }
+    ],
+    "factory-boy": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.3.1"
+      }
+    ],
+    "black": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=24.10.0"
+      }
+    ],
+    "flake8": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=7.1.0"
+      }
+    ],
+    "isort": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=5.13.0"
+      }
+    ],
+    "pylint": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.3.0"
+      }
+    ],
+    "mypy": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.13.0"
+      },
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=1.7.0"
+      }
+    ],
+    "sentry-sdk": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.18.0"
+      }
+    ],
+    "django-debug-toolbar": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=4.4.0"
+      }
+    ],
+    "django-extensions": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=3.2.3"
+      }
+    ],
+    "django-ratelimit": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=4.1.0"
+      }
+    ],
+    "django-axes": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=8.0.0"
+      },
+      {
+        "service": "web",
+        "file": "repo\\web\\requirements.txt",
+        "version": ">=7.0.0"
+      }
+    ],
+    "pip-audit": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=2.7.0"
+      }
+    ],
+    "ipython": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=8.29.0"
+      }
+    ],
+    "jupyter": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=1.1.1"
+      }
+    ],
+    "notebook": [
+      {
+        "service": "main",
+        "file": "repo\\main\\requirements.txt",
+        "version": ">=7.2.0"
+      }
+    ],
+    "ruff": [
+      {
+        "service": "monitor",
+        "file": "repo\\monitor\\requirements.txt",
+        "version": ">=0.1.0"
+      }
+    ],
+    "pyportfolioopt": [
+      {
+        "service": "portfolio",
+        "file": "repo\\portfolio\\requirements.txt",
+        "version": ">=1.5.4"
+      }
+    ],
+    "torchaudio": [
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==2.8.0"
+      }
+    ],
+    "datasets": [
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==4.0.0"
+      }
+    ],
+    "wandb": [
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==0.21.2"
+      }
+    ],
+    "tensorboard": [
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": "==2.20.0"
+      }
+    ],
+    "gymnasium": [
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=0.29.1,<1.3.0"
+      }
+    ],
+    "stable-baselines3": [
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=2.2.0"
+      }
+    ],
+    "alibi-detect": [
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=0.11.0"
+      }
+    ],
+    "ta": [
+      {
+        "service": "training",
+        "file": "repo\\training\\requirements.txt",
+        "version": ">=0.11.0"
+      }
+    ]
+  },
+  "conflicts": [
+    {
+      "package": "fastapi",
+      "services": [
+        "execution",
+        "data",
+        "ai",
+        "portfolio",
+        "api",
+        "app",
+        "analyze",
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        ">=0.115.0",
+        ">=0.121.1",
+        "any",
+        ">=0.115.0",
+        ">=0.104.0",
+        "==0.104.1",
+        ">=0.115.0",
+        ">=0.104.0",
+        ">=0.104.0",
+        "any"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.115.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.121.1"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": "any"
+        },
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=0.115.0"
+        },
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=0.104.0"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==0.104.1"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.115.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=0.104.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=0.104.0"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\src\\requirements.txt",
+          "version": "any"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "uvicorn",
+      "services": [
+        "execution",
+        "data",
+        "ai",
+        "portfolio",
+        "api",
+        "app",
+        "analyze",
+        "web",
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        "[standard]>=0.32.0",
+        "[standard]>=0.38.0",
+        "[standard]",
+        "[standard]>=0.32.0",
+        "[standard]>=0.24.0",
+        "[standard]==0.24.0",
+        ">=0.32.0",
+        "[standard]>=0.24.0",
+        "[standard]>=0.24.0",
+        "[standard]>=0.27.0",
+        "[standard]"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": "[standard]>=0.32.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": "[standard]>=0.38.0"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": "[standard]"
+        },
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": "[standard]>=0.32.0"
+        },
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": "[standard]>=0.24.0"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "[standard]==0.24.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.32.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": "[standard]>=0.24.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": "[standard]>=0.24.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": "[standard]>=0.27.0"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\src\\requirements.txt",
+          "version": "[standard]"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "pydantic",
+      "services": [
+        "execution",
+        "ai",
+        "api",
+        "app",
+        "analyze",
+        "web",
+        "main",
+        "portfolio",
+        "monitor"
+      ],
+      "versions": [
+        ">=2.9.0",
+        ">=2.12.4",
+        ">=2",
+        ">=2.9.0",
+        "==2.5.0",
+        ">=2.5.0",
+        ">=2.0.0",
+        ">=2.5.0",
+        ">=2.0",
+        ">=2"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=2.9.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=2.12.4"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": ">=2"
+        },
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=2.9.0"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==2.5.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=2.5.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=2.0.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=2.5.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\config\\python\\requirements.txt",
+          "version": ">=2.0"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\src\\requirements.txt",
+          "version": ">=2"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "langchain",
+      "services": [
+        "ai",
+        "main",
+        "analyze"
+      ],
+      "versions": [
+        ">=0.3.0",
+        ">=0.3.0,<0.4.0",
+        ">=0.3.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.3.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.3.0,<0.4.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.3.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "langchain-core",
+      "services": [
+        "ai",
+        "analyze"
+      ],
+      "versions": [
+        ">=0.3.0",
+        ">=0.3.0,<0.4.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.3.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.3.0,<0.4.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "langchain-community",
+      "services": [
+        "ai",
+        "main",
+        "analyze"
+      ],
+      "versions": [
+        ">=0.3.0",
+        ">=0.3.0,<0.4.0",
+        ">=0.3.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.3.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.3.0,<0.4.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.3.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "langchain-ollama",
+      "services": [
+        "ai",
+        "analyze"
+      ],
+      "versions": [
+        ">=0.2.0",
+        ">=0.1.0,<2.0.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.2.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.1.0,<2.0.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "ollama",
+      "services": [
+        "web",
+        "ai",
+        "main",
+        "analyze"
+      ],
+      "versions": [
+        ">=0.3.0",
+        ">=0.1.0,<1.0.0",
+        ">=0.4.0",
+        ">=0.1.7"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.3.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.1.0,<1.0.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.4.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=0.1.7"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "chromadb",
+      "services": [
+        "ai",
+        "main",
+        "analyze"
+      ],
+      "versions": [
+        ">=0.5.0",
+        ">=0.4.0,<1.0.0",
+        ">=0.5.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.5.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.4.0,<1.0.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.5.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "sentence-transformers",
+      "services": [
+        "web",
+        "ai",
+        "main",
+        "analyze"
+      ],
+      "versions": [
+        ">=3.0.0",
+        ">=2.2.0,<6.0.0",
+        ">=3.3.0",
+        ">=2.2.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=3.0.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=2.2.0,<6.0.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=3.3.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=2.2.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "numpy",
+      "services": [
+        "data",
+        "training",
+        "ai",
+        "portfolio",
+        "api",
+        "app",
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=1.26.0",
+        ">=1.26.0",
+        ">=1.26.0,<2.0",
+        ">=1.26.0",
+        ">=1.26.0,<2.0",
+        ">=1.24.0",
+        ">=1.23.5,<2.0.0",
+        ">=1.26.0,<2.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=1.26.0"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": ">=1.26.0"
+        },
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=1.26.0,<2.0"
+        },
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=1.26.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=1.26.0,<2.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=1.24.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=1.23.5,<2.0.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=1.26.0,<2.0"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "pandas",
+      "services": [
+        "data",
+        "training",
+        "ai",
+        "portfolio",
+        "app",
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=2.2.0",
+        ">=2.2.0",
+        ">=2.2.0",
+        ">=2.2.0",
+        ">=2.0.0",
+        "==2.3.2",
+        ">=2.2.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=2.2.0"
+        },
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=2.2.0"
+        },
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=2.2.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=2.2.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=2.0.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==2.3.2"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=2.2.0"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "httpx",
+      "services": [
+        "execution",
+        "training",
+        "ai",
+        "api",
+        "analyze",
+        "web",
+        "portfolio",
+        "monitor"
+      ],
+      "versions": [
+        ">=0.25.0",
+        ">=0.26.0,<0.29.0",
+        "any",
+        "==0.25.2",
+        ">=0.25.0",
+        ">=0.25.0",
+        ">=0.25.0",
+        ">=0.26.0",
+        "any"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.25.0"
+        },
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.26.0,<0.29.0"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": "any"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==0.25.2"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=0.25.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=0.25.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=0.25.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=0.26.0"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\src\\requirements.txt",
+          "version": "any"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "ta-lib",
+      "services": [
+        "ai",
+        "main",
+        "portfolio",
+        "training"
+      ],
+      "versions": [
+        ">=0.4.28",
+        ">=0.4.28",
+        ">=0.4.28",
+        ">=0.4.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.4.28"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.4.28"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=0.4.28"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=0.4.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "pytest",
+      "services": [
+        "training",
+        "ai",
+        "portfolio",
+        "web",
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        ">=7.4.0",
+        ">=8.3.0",
+        ">=7.4.0",
+        ">=7.4.0",
+        ">=7.4.0",
+        ">=7.4.3"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=7.4.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=8.3.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=7.4.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=7.4.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=7.4.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=7.4.3"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "pytest-asyncio",
+      "services": [
+        "training",
+        "ai",
+        "web",
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        ">=0.21.0",
+        ">=0.24.0",
+        ">=0.21.0",
+        ">=0.21.0",
+        ">=0.23.2"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=0.21.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.24.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=0.21.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=0.21.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=0.23.2"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "pytest-cov",
+      "services": [
+        "training",
+        "ai",
+        "portfolio",
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        ">=4.1.0",
+        ">=6.0.0",
+        ">=4.1.0",
+        ">=4.1.0",
+        ">=4.1.0"
+      ],
+      "usages": [
+        {
+          "service": "ai",
+          "file": "repo\\ai\\requirements.txt",
+          "version": ">=4.1.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=6.0.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=4.1.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=4.1.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=4.1.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "pydantic-settings",
+      "services": [
+        "analyze",
+        "web",
+        "monitor"
+      ],
+      "versions": [
+        ">=2.11.0",
+        ">=2.1.0",
+        ">=2.1.0"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=2.11.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=2.1.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=2.1.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "python-multipart",
+      "services": [
+        "analyze",
+        "execution"
+      ],
+      "versions": [
+        ">=0.0.20",
+        "==0.0.6"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.0.20"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==0.0.6"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "pyyaml",
+      "services": [
+        "analyze",
+        "execution",
+        "monitor",
+        "main"
+      ],
+      "versions": [
+        ">=6.0.3",
+        "==6.0.1",
+        ">=6.0.1",
+        ">=6.0"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=6.0.3"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==6.0.1"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=6.0.1"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\config\\python\\requirements.txt",
+          "version": ">=6.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "prometheus-client",
+      "services": [
+        "execution",
+        "analyze",
+        "app",
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        ">=0.23.1",
+        ">=0.20.0",
+        "==0.19.0",
+        ">=0.21.0",
+        ">=0.19.0"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.23.1"
+        },
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=0.20.0"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==0.19.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.21.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=0.19.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "redis",
+      "services": [
+        "web",
+        "analyze",
+        "main",
+        "app"
+      ],
+      "versions": [
+        ">=5.0.0,<8.0.0",
+        ">=5.0.0",
+        ">=5.2.0,<5.3.0",
+        ">=5.2.0"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=5.0.0,<8.0.0"
+        },
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=5.0.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=5.2.0,<5.3.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=5.2.0"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "google-generativeai",
+      "services": [
+        "web",
+        "analyze",
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        ">=0.3.0,<1.0.0",
+        ">=0.8.3",
+        ">=0.3.0",
+        ">=0.3.0"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.3.0,<1.0.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.8.3"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=0.3.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=0.3.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "pypdf",
+      "services": [
+        "analyze",
+        "main"
+      ],
+      "versions": [
+        ">=3.17.0,<7.0.0",
+        ">=5.1.0"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=3.17.0,<7.0.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=5.1.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "python-docx",
+      "services": [
+        "analyze",
+        "main"
+      ],
+      "versions": [
+        ">=1.2.0",
+        ">=1.1.2"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=1.2.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=1.1.2"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "loguru",
+      "services": [
+        "training",
+        "portfolio",
+        "analyze",
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=0.7.3",
+        ">=0.7.2",
+        ">=0.7.0",
+        ">=0.7.0",
+        ">=0.7.2"
+      ],
+      "usages": [
+        {
+          "service": "analyze",
+          "file": "repo\\analyze\\requirements.txt",
+          "version": ">=0.7.3"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.7.2"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=0.7.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=0.7.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=0.7.2"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "requests",
+      "services": [
+        "execution",
+        "data",
+        "api",
+        "web",
+        "main",
+        "portfolio"
+      ],
+      "versions": [
+        "any",
+        ">=2.32.0",
+        "==2.31.0",
+        ">=2.32.3",
+        ">=2.31.0",
+        ">=2.31.0",
+        "any"
+      ],
+      "usages": [
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": "any"
+        },
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=2.32.0"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==2.31.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=2.32.3"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=2.31.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=2.31.0"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\src\\requirements.txt",
+          "version": "any"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "celery",
+      "services": [
+        "web",
+        "app",
+        "main",
+        "api"
+      ],
+      "versions": [
+        "[redis]>=5.3.0",
+        ">=5.3.0",
+        ">=5.5.3",
+        "[redis]>=5.5.3",
+        ">=5.5.3",
+        "[redis]>=5.5.3",
+        "[redis]>=5.3.0"
+      ],
+      "usages": [
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": "[redis]>=5.3.0"
+        },
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=5.3.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=5.5.3"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": "[redis]>=5.5.3"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=5.5.3"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": "[redis]>=5.5.3"
+        },
+        {
+          "service": "api",
+          "file": "repo\\api\\src\\requirements.txt",
+          "version": "[redis]>=5.3.0"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "pytz",
+      "services": [
+        "main",
+        "data",
+        "training",
+        "api"
+      ],
+      "versions": [
+        "any",
+        "any",
+        ">=2024.2",
+        "any"
+      ],
+      "usages": [
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": "any"
+        },
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": "any"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=2024.2"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "any"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "mlflow",
+      "services": [
+        "training",
+        "api"
+      ],
+      "versions": [
+        ">=3.3.0",
+        "==3.3.2"
+      ],
+      "usages": [
+        {
+          "service": "api",
+          "file": "repo\\api\\requirements.txt",
+          "version": ">=3.3.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==3.3.2"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "optuna",
+      "services": [
+        "app",
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=4.0.0",
+        ">=4.0.0",
+        "==4.5.0"
+      ],
+      "usages": [
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=4.0.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=4.0.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==4.5.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "scikit-learn",
+      "services": [
+        "app",
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=1.3.0",
+        ">=1.5.0",
+        "==1.7.1"
+      ],
+      "usages": [
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=1.3.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=1.5.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==1.7.1"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "scipy",
+      "services": [
+        "app",
+        "main",
+        "portfolio",
+        "training"
+      ],
+      "versions": [
+        ">=1.11.0",
+        ">=1.13.0",
+        ">=1.10.0",
+        ">=1.11.0"
+      ],
+      "usages": [
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=1.11.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=1.13.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=1.10.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=1.11.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "ccxt",
+      "services": [
+        "app",
+        "execution",
+        "portfolio",
+        "main"
+      ],
+      "versions": [
+        ">=4.0.0",
+        ">=4.5.0",
+        ">=4.4.0",
+        ">=4.0.0"
+      ],
+      "usages": [
+        {
+          "service": "app",
+          "file": "repo\\app\\requirements.txt",
+          "version": ">=4.0.0"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": ">=4.5.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=4.4.0"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=4.0.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "sqlalchemy",
+      "services": [
+        "web",
+        "main",
+        "data"
+      ],
+      "versions": [
+        ">=2.0.23",
+        ">=2.0.44",
+        ">=2.0.0"
+      ],
+      "usages": [
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=2.0.23"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=2.0.44"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=2.0.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "psycopg2-binary",
+      "services": [
+        "web",
+        "main",
+        "data"
+      ],
+      "versions": [
+        ">=2.9.9",
+        ">=2.9.11",
+        ">=2.9.9"
+      ],
+      "usages": [
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=2.9.9"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=2.9.11"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=2.9.9"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "yfinance",
+      "services": [
+        "portfolio",
+        "main",
+        "data",
+        "training"
+      ],
+      "versions": [
+        ">=0.2.28",
+        ">=0.2.48",
+        ">=0.2.28",
+        ">=0.2.0"
+      ],
+      "usages": [
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=0.2.28"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.2.48"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=0.2.28"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=0.2.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "cryptography",
+      "services": [
+        "web",
+        "execution",
+        "data"
+      ],
+      "versions": [
+        ">=41.0.0",
+        "==41.0.7",
+        ">=42.0.0"
+      ],
+      "usages": [
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=41.0.0"
+        },
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==41.0.7"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=42.0.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "gunicorn",
+      "services": [
+        "web",
+        "main",
+        "data"
+      ],
+      "versions": [
+        ">=21.2.0",
+        ">=23.0.0",
+        ">=21.2.0"
+      ],
+      "usages": [
+        {
+          "service": "data",
+          "file": "repo\\data\\requirements.txt",
+          "version": ">=21.2.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=23.0.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=21.2.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "python-jose",
+      "services": [
+        "execution",
+        "main"
+      ],
+      "versions": [
+        "[cryptography]==3.3.0",
+        ">=3.5.0"
+      ],
+      "usages": [
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "[cryptography]==3.3.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=3.5.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "python-dotenv",
+      "services": [
+        "web",
+        "execution",
+        "portfolio",
+        "main"
+      ],
+      "versions": [
+        "==1.0.0",
+        ">=1.1.1",
+        ">=1.0.0",
+        ">=1.0.1",
+        ">=1.0.0"
+      ],
+      "usages": [
+        {
+          "service": "execution",
+          "file": "repo\\execution\\requirements.txt",
+          "version": "==1.0.0"
+        },
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=1.1.1"
+        },
+        {
+          "service": "portfolio",
+          "file": "repo\\portfolio\\requirements.txt",
+          "version": ">=1.0.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=1.0.1"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=1.0.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "djangorestframework",
+      "services": [
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=3.16.1",
+        ">=3.15.2"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=3.16.1"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=3.15.2"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "django-cors-headers",
+      "services": [
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=4.9.0",
+        ">=4.7.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=4.9.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=4.7.0"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "whitenoise",
+      "services": [
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=6.11.0",
+        ">=6.6.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=6.11.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=6.6.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "aiohttp",
+      "services": [
+        "web",
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        ">=3.13.1",
+        ">=3.9.0",
+        ">=3.13.1"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=3.13.1"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=3.9.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=3.13.1"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "torch",
+      "services": [
+        "web",
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=2.4.0",
+        "==2.8.0",
+        ">=2.0.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=2.4.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==2.8.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=2.0.0"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "torchvision",
+      "services": [
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=0.19.0",
+        "==0.23.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.19.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==0.23.0"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "openai",
+      "services": [
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=1.54.0",
+        ">=1.12.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=1.54.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=1.12.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "transformers",
+      "services": [
+        "web",
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=4.46.0",
+        "==4.56.0",
+        ">=4.35.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=4.46.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==4.56.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=4.35.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "accelerate",
+      "services": [
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=1.0.0",
+        "==1.10.1"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=1.0.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==1.10.1"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "matplotlib",
+      "services": [
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=3.9.0",
+        "==3.10.6"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=3.9.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==3.10.6"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "seaborn",
+      "services": [
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=0.13.2",
+        "==0.13.2"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=0.13.2"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": "==0.13.2"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "psutil",
+      "services": [
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=6.1.0",
+        ">=5.9.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=6.1.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=5.9.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "pytest-django",
+      "services": [
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=4.9.0",
+        ">=4.7.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=4.9.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=4.7.0"
+        }
+      ],
+      "severity": "high"
+    },
+    {
+      "package": "pytest-mock",
+      "services": [
+        "main",
+        "training"
+      ],
+      "versions": [
+        ">=3.14.0",
+        ">=3.11.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=3.14.0"
+        },
+        {
+          "service": "training",
+          "file": "repo\\training\\requirements.txt",
+          "version": ">=3.11.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "mypy",
+      "services": [
+        "main",
+        "monitor"
+      ],
+      "versions": [
+        ">=1.13.0",
+        ">=1.7.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=1.13.0"
+        },
+        {
+          "service": "monitor",
+          "file": "repo\\monitor\\requirements.txt",
+          "version": ">=1.7.0"
+        }
+      ],
+      "severity": "low"
+    },
+    {
+      "package": "django-axes",
+      "services": [
+        "web",
+        "main"
+      ],
+      "versions": [
+        ">=8.0.0",
+        ">=7.0.0"
+      ],
+      "usages": [
+        {
+          "service": "main",
+          "file": "repo\\main\\requirements.txt",
+          "version": ">=8.0.0"
+        },
+        {
+          "service": "web",
+          "file": "repo\\web\\requirements.txt",
+          "version": ">=7.0.0"
+        }
+      ],
+      "severity": "high"
+    }
+  ],
+  "services": {
+    "ai": {
+      "name": "ai",
+      "files": [
+        "repo\\ai\\requirements.txt"
+      ]
+    },
+    "analyze": {
+      "name": "analyze",
+      "files": [
+        "repo\\analyze\\requirements.txt"
+      ]
+    },
+    "api": {
+      "name": "api",
+      "files": [
+        "repo\\api\\requirements.txt",
+        "repo\\api\\src\\requirements.txt",
+        "repo\\api\\pyproject.toml"
+      ]
+    },
+    "app": {
+      "name": "app",
+      "files": [
+        "repo\\app\\requirements.txt"
+      ]
+    },
+    "data": {
+      "name": "data",
+      "files": [
+        "repo\\data\\requirements.txt",
+        "repo\\data\\pyproject.toml"
+      ]
+    },
+    "execution": {
+      "name": "execution",
+      "files": [
+        "repo\\execution\\requirements.txt",
+        "repo\\execution\\Cargo.toml"
+      ]
+    },
+    "main": {
+      "name": "main",
+      "files": [
+        "repo\\main\\requirements.txt",
+        "repo\\main\\config\\python\\requirements.txt",
+        "repo\\main\\Cargo.toml",
+        "repo\\main\\config\\rust\\Cargo.toml"
+      ]
+    },
+    "monitor": {
+      "name": "monitor",
+      "files": [
+        "repo\\monitor\\requirements.txt"
+      ]
+    },
+    "portfolio": {
+      "name": "portfolio",
+      "files": [
+        "repo\\portfolio\\requirements.txt"
+      ]
+    },
+    "training": {
+      "name": "training",
+      "files": [
+        "repo\\training\\requirements.txt",
+        "repo\\training\\pyproject.toml"
+      ]
+    },
+    "web": {
+      "name": "web",
+      "files": [
+        "repo\\web\\requirements.txt"
+      ]
+    },
+    "auth": {
+      "name": "auth",
+      "files": [
+        "repo\\auth\\Cargo.toml"
+      ]
+    },
+    "meta": {
+      "name": "meta",
+      "files": [
+        "repo\\meta\\Cargo.toml"
+      ]
+    }
+  },
+  "summary": {
+    "total_packages": 139,
+    "conflicting_packages": 57,
+    "high_severity_conflicts": 11,
+    "services_analyzed": 13,
+    "timestamp": "2025-11-11T07:44:54.892531"
+  }
+}

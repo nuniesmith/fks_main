@@ -14,7 +14,7 @@ home: https://github.com/nuniesmith/fks
 sources:
   - https://github.com/nuniesmith/fks
 maintainers:
-  - name: FKS Team
+  - name: nuniesmith
     email: support@fks-trading.com
 dependencies:
   - name: postgresql

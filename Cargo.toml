@@ -2,7 +2,7 @@
 name = "fks_main"
 version = "1.0.0"
 edition = "2021"
-authors = ["FKS Team"]
+authors = ["nuniesmith"]
 description = "FKS Main Orchestration Service - Rust API for K8s control and service management"
 
 [dependencies]

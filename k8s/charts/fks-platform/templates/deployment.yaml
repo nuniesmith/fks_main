@@ -68,9 +68,28 @@ spec:
           {{- toYaml $config.env | nindent 10 }}
         {{- end }}
         
+        {{- if and (hasKey $config "healthCheck") $config.healthCheck.enabled }}
         livenessProbe:
           httpGet:
-            path: /ready/
+            path: {{ $config.healthCheck.livenessPath | default "/health" }}
+            port: http
+          initialDelaySeconds: {{ $config.healthCheck.initialDelaySeconds | default 30 }}
+          periodSeconds: {{ $config.healthCheck.periodSeconds | default 10 }}
+          timeoutSeconds: {{ $config.healthCheck.timeoutSeconds | default 5 }}
+          failureThreshold: {{ $config.healthCheck.failureThreshold | default 3 }}
+        
+        readinessProbe:
+          httpGet:
+            path: {{ $config.healthCheck.readinessPath | default "/health" }}
+            port: http
+          initialDelaySeconds: {{ $config.healthCheck.initialDelaySeconds | default 10 }}
+          periodSeconds: {{ $config.healthCheck.periodSeconds | default 5 }}
+          timeoutSeconds: {{ $config.healthCheck.timeoutSeconds | default 3 }}
+          failureThreshold: {{ $config.healthCheck.failureThreshold | default 3 }}
+        {{- else }}
+        livenessProbe:
+          httpGet:
+            path: /health
             port: http
           initialDelaySeconds: 30
           periodSeconds: 10
@@ -79,12 +98,13 @@ spec:
         
         readinessProbe:
           httpGet:
-            path: /ready/
+            path: /health
             port: http
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
+        {{- end }}
         
         resources:
           {{- toYaml $config.resources | nindent 10 }}

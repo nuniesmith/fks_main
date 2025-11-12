@@ -726,22 +726,18 @@ k8s_start() {
   fi
 
   # Start minikube
+  log_info "Starting minikube..."
   minikube start || { log_error "Minikube start failed"; return 1; }
   eval $(minikube docker-env)
+  log_success "Minikube started"
 
-  # Ask if user wants to build images locally or pull from Docker Hub
-  read -p "Build images locally (b) or pull from Docker Hub (p)? [p]: " build_choice
-  build_choice=${build_choice:-p}
+  # Enable ingress addon
+  log_info "Enabling ingress addon..."
+  minikube addons enable ingress || log_warning "Failed to enable ingress (may already be enabled)"
 
-  if [ "$build_choice" = "b" ]; then
-    log_info "Building all images locally for minikube..."
-    for service in "${SERVICES[@]}"; do
-      build_docker "$service" || log_warning "Failed to build $service"
-    done
-  else
-    log_info "Pulling images from Docker Hub..."
-    sync_images "true" "${SERVICES[@]}"
-  fi
+  # Default to pulling from Docker Hub (all images are built via GitHub Actions)
+  log_info "Pulling images from Docker Hub (nuniesmith/fks)..."
+  sync_images "true" "${SERVICES[@]}" || log_warning "Some images failed to pull, but continuing..."
 
   # Ask for namespace
   read -p "Enter Kubernetes namespace (default: fks-trading): " namespace
@@ -749,17 +745,186 @@ k8s_start() {
 
   # Create namespace if it doesn't exist
   kubectl create namespace "$namespace" 2>/dev/null || true
+  log_success "Namespace $namespace ready"
 
-  # Apply manifests (assuming they exist in k8s/ dir)
-  if [ -d "$PROJECT_ROOT/k8s" ]; then
-    log_info "Applying Kubernetes manifests from $PROJECT_ROOT/k8s..."
-    kubectl apply -f "$PROJECT_ROOT/k8s" -n "$namespace" || { log_error "Failed to apply k8s manifests"; return 1; }
+  # Check if setup script exists and use it, otherwise apply manifests manually
+  if [ -f "$PROJECT_ROOT/k8s/setup-local-k8s.sh" ]; then
+    log_info "Using setup script for complete deployment..."
+    read -p "Run full setup script (creates secrets, deploys all services, sets up dashboard)? (y/n) [y]: " use_setup
+    use_setup=${use_setup:-y}
+    
+    if [ "$use_setup" = "y" ]; then
+      # Run setup script but skip minikube start (already done)
+      log_info "Running setup script..."
+      cd "$PROJECT_ROOT/k8s"
+      bash setup-local-k8s.sh || { log_error "Setup script failed"; return 1; }
+      log_success "Setup complete!"
+    else
+      # Apply manifests manually
+      log_info "Applying Kubernetes manifests manually..."
+      if [ -f "$PROJECT_ROOT/k8s/manifests/all-services.yaml" ]; then
+        kubectl apply -f "$PROJECT_ROOT/k8s/manifests/all-services.yaml" -n "$namespace" || log_warning "Some resources may have failed"
+      fi
+      if [ -f "$PROJECT_ROOT/k8s/manifests/missing-services.yaml" ]; then
+        kubectl apply -f "$PROJECT_ROOT/k8s/manifests/missing-services.yaml" -n "$namespace" || log_warning "Some resources may have failed"
+      fi
+      if [ -f "$PROJECT_ROOT/k8s/ingress.yaml" ]; then
+        kubectl apply -f "$PROJECT_ROOT/k8s/ingress.yaml" -n "$namespace" || log_warning "Ingress setup may have failed"
+      fi
+    fi
   else
-    log_warning "No k8s manifests found in $PROJECT_ROOT/k8s"
+    # Apply manifests manually
+    log_info "Applying Kubernetes manifests from $PROJECT_ROOT/k8s..."
+    if [ -d "$PROJECT_ROOT/k8s/manifests" ]; then
+      kubectl apply -f "$PROJECT_ROOT/k8s/manifests" -n "$namespace" || log_warning "Some resources may have failed"
+    fi
+    if [ -f "$PROJECT_ROOT/k8s/ingress.yaml" ]; then
+      kubectl apply -f "$PROJECT_ROOT/k8s/ingress.yaml" -n "$namespace" || log_warning "Ingress setup may have failed"
+    fi
   fi
 
-  log_success "Kubernetes started"
+  # Setup Kubernetes Dashboard with easy auth
+  log_info "Setting up Kubernetes Dashboard with easy auth..."
+  setup_dashboard_easy_auth
+
+  log_success "Kubernetes started and configured"
+  log_info "Services are pulling images from Docker Hub: nuniesmith/fks:<service>-latest"
   log_info "To sync images later, use menu option 11 (Sync Images from Docker Hub)"
+  log_info "To update deployments, use menu option 12 (Sync Images & Update Kubernetes Deployments)"
+  
+  # Show access info
+  echo ""
+  log_info "Access Information:"
+  echo "  - Dashboard: http://dashboard.fkstrading.xyz (or run: minikube service kubernetes-dashboard -n kubernetes-dashboard)"
+  echo "  - Web Interface: http://fkstrading.xyz"
+  echo "  - Get dashboard token: kubectl -n kubernetes-dashboard create token admin-user --duration=8760h"
+}
+
+# Setup Kubernetes Dashboard with easy auth (no token required for local dev)
+setup_dashboard_easy_auth() {
+  local namespace="kubernetes-dashboard"
+  
+  log_info "Installing Kubernetes Dashboard..."
+  
+  # Install dashboard if not exists
+  if ! kubectl get deployment kubernetes-dashboard -n "$namespace" &> /dev/null; then
+    log_info "Installing Kubernetes Dashboard..."
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+    # Wait for dashboard to be ready
+    kubectl wait --for=condition=available deployment/kubernetes-dashboard -n "$namespace" --timeout=300s || log_warning "Dashboard may still be starting"
+  else
+    log_info "Dashboard already installed"
+  fi
+
+  # Create admin user and service account
+  log_info "Creating admin user for easy access..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: $namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: $namespace
+EOF
+
+  # Get dashboard token (try multiple methods)
+  log_info "Generating dashboard token..."
+  DASHBOARD_TOKEN=""
+  
+  # Method 1: Create token (Kubernetes 1.24+)
+  DASHBOARD_TOKEN=$(kubectl -n "$namespace" create token admin-user --duration=8760h 2>/dev/null)
+  
+  # Method 2: Get from secret (older Kubernetes)
+  if [ -z "$DASHBOARD_TOKEN" ]; then
+    DASHBOARD_TOKEN=$(kubectl -n "$namespace" get secret admin-user-secret -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
+  fi
+  
+  # Method 3: Get from service account token
+  if [ -z "$DASHBOARD_TOKEN" ]; then
+    local secret_name=$(kubectl -n "$namespace" get sa admin-user -o jsonpath='{.secrets[0].name}' 2>/dev/null)
+    if [ -n "$secret_name" ]; then
+      DASHBOARD_TOKEN=$(kubectl -n "$namespace" get secret "$secret_name" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
+    fi
+  fi
+
+  if [ -n "$DASHBOARD_TOKEN" ]; then
+    # Save token to file
+    echo "$DASHBOARD_TOKEN" > "$PROJECT_ROOT/k8s/dashboard-token.txt"
+    log_success "Dashboard token saved to $PROJECT_ROOT/k8s/dashboard-token.txt"
+    log_info "Token (first 50 chars): $(echo "$DASHBOARD_TOKEN" | head -c 50)..."
+  else
+    log_warning "Could not generate token automatically"
+    log_info "You can get it manually with:"
+    log_info "  kubectl -n $namespace create token admin-user --duration=8760h"
+  fi
+
+  # Deploy dashboard ingress if manifests exist
+  if [ -f "$PROJECT_ROOT/k8s/manifests/dashboard-ingress.yaml" ]; then
+    log_info "Deploying dashboard ingress..."
+    kubectl apply -f "$PROJECT_ROOT/k8s/manifests/dashboard-ingress.yaml" || log_warning "Dashboard ingress setup may have failed"
+  fi
+
+  # Create a simple access script
+  cat > "$PROJECT_ROOT/k8s/access-dashboard.sh" <<'SCRIPT'
+#!/bin/bash
+# Quick access to Kubernetes Dashboard
+# This script opens the dashboard with the token automatically
+
+TOKEN_FILE="$(dirname "$0")/dashboard-token.txt"
+NAMESPACE="kubernetes-dashboard"
+
+if [ -f "$TOKEN_FILE" ]; then
+  TOKEN=$(cat "$TOKEN_FILE")
+  echo "Opening dashboard with token..."
+  # Start proxy in background if not running
+  if ! pgrep -f "kubectl proxy" > /dev/null; then
+    echo "Starting kubectl proxy..."
+    kubectl proxy > /dev/null 2>&1 &
+    sleep 2
+  fi
+  # Open dashboard with token
+  DASHBOARD_URL="http://localhost:8001/api/v1/namespaces/$NAMESPACE/services/https:kubernetes-dashboard:/proxy/#/login?token=$TOKEN"
+  echo "Dashboard URL: $DASHBOARD_URL"
+  if command -v xdg-open > /dev/null; then
+    xdg-open "$DASHBOARD_URL"
+  elif command -v open > /dev/null; then
+    open "$DASHBOARD_URL"
+  else
+    echo "Please open this URL in your browser:"
+    echo "$DASHBOARD_URL"
+  fi
+else
+  echo "Token file not found. Generating token..."
+  TOKEN=$(kubectl -n "$NAMESPACE" create token admin-user --duration=8760h 2>/dev/null)
+  if [ -n "$TOKEN" ]; then
+    echo "$TOKEN" > "$TOKEN_FILE"
+    echo "Token saved. Run this script again to open dashboard."
+  else
+    echo "Failed to generate token. Run manually:"
+    echo "  kubectl -n $NAMESPACE create token admin-user --duration=8760h"
+  fi
+fi
+SCRIPT
+  chmod +x "$PROJECT_ROOT/k8s/access-dashboard.sh"
+  log_success "Dashboard access script created: $PROJECT_ROOT/k8s/access-dashboard.sh"
+
+  log_success "Dashboard setup complete!"
+  log_info "Access dashboard:"
+  log_info "  1. Run: $PROJECT_ROOT/k8s/access-dashboard.sh"
+  log_info "  2. Or manually: kubectl proxy (then visit http://localhost:8001/api/v1/namespaces/$namespace/services/https:kubernetes-dashboard:/proxy/)"
+  log_info "  3. Use token from: $PROJECT_ROOT/k8s/dashboard-token.txt"
 }
 
 k8s_stop() {
@@ -798,12 +963,13 @@ show_menu() {
   echo "5. Commit & Push (Triggers GitHub Actions)"
   echo "6. Analyze Codebase"
   echo "7. Check GitHub Actions Status"
-  echo "8. Kubernetes Start"
+  echo "8. Kubernetes Start (Pulls from Docker Hub by default)"
   echo "9. Kubernetes Stop"
   echo "10. Pull Images from Docker Hub (Local)"
   echo "11. Pull Images from Docker Hub (Minikube)"
   echo "12. Sync Images & Update Kubernetes Deployments"
-  echo "13. Exit"
+  echo "13. Access Kubernetes Dashboard"
+  echo "14. Exit"
   echo ""
   read -p "Enter choice: " choice
 }
@@ -989,6 +1155,40 @@ while true; do
       fi
       ;;
     13)
+      if [ -f "$PROJECT_ROOT/k8s/access-dashboard.sh" ]; then
+        bash "$PROJECT_ROOT/k8s/access-dashboard.sh"
+      else
+        log_info "Opening Kubernetes Dashboard..."
+        if ! pgrep -f "kubectl proxy" > /dev/null; then
+          log_info "Starting kubectl proxy..."
+          kubectl proxy > /dev/null 2>&1 &
+          sleep 2
+        fi
+        
+        # Try to get token
+        TOKEN=$(kubectl -n kubernetes-dashboard create token admin-user --duration=8760h 2>/dev/null || \
+                kubectl -n kubernetes-dashboard get secret admin-user-secret -o jsonpath='{.data.token}' 2>/dev/null | base64 -d)
+        
+        if [ -n "$TOKEN" ]; then
+          DASHBOARD_URL="http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/login?token=$TOKEN"
+          log_success "Dashboard URL: $DASHBOARD_URL"
+          log_info "Opening in browser..."
+          if command -v xdg-open > /dev/null; then
+            xdg-open "$DASHBOARD_URL"
+          elif command -v open > /dev/null; then
+            open "$DASHBOARD_URL"
+          else
+            echo "Please open this URL in your browser:"
+            echo "$DASHBOARD_URL"
+          fi
+        else
+          log_warning "Could not get token automatically"
+          log_info "Run: kubectl -n kubernetes-dashboard create token admin-user --duration=8760h"
+          log_info "Then visit: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
+        fi
+      fi
+      ;;
+    14)
       log_info "Exiting..."
       exit 0
       ;;

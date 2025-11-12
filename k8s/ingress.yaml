@@ -22,14 +22,23 @@ spec:
   - host: fkstrading.xyz
     http:
       paths:
-      # Main web UI
+      # Web service (Django Web Interface) - Root path
       - path: /()(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-web
+            port:
+              number: 3001
+      
+      # Main service (Rust management & monitoring)
+      - path: /main(/|$)(.*)
         pathType: ImplementationSpecific
         backend:
           service:
             name: fks-main
             port:
-              number: 8000
+              number: 8010
       
       # API service
       - path: /api(/|$)(.*)
@@ -139,6 +148,33 @@ spec:
             port:
               number: 8011
       
+      # Web service (Web Interface)
+      - path: /web(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-web
+            port:
+              number: 3001
+      
+      # AI service
+      - path: /ai(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-ai
+            port:
+              number: 8007
+      
+      # Ninja service (NinjaTrader8 bridge)
+      - path: /ninja(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: fks-ninja
+            port:
+              number: 8006
+      
       # Grafana dashboard
       - path: /grafana(/|$)(.*)
         pathType: ImplementationSpecific
@@ -168,8 +204,20 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  # Main web UI
+  # Web service (Django Web Interface) - Root path
   - host: fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-web
+            port:
+              number: 3001
+  
+  # Main service (Rust management & monitoring)
+  - host: main.fkstrading.xyz
     http:
       paths:
       - path: /
@@ -178,7 +226,7 @@ spec:
           service:
             name: fks-main
             port:
-              number: 8000
+              number: 8010
   
   # API service
   - host: api.fkstrading.xyz
@@ -227,6 +275,42 @@ spec:
             name: fks-execution
             port:
               number: 8004
+  
+  # Web service (Web Interface)
+  - host: web.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-web
+            port:
+              number: 3001
+  
+  # AI service
+  - host: ai.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-ai
+            port:
+              number: 8007
+  
+  # Ninja service (NinjaTrader8 bridge)
+  - host: ninja.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fks-ninja
+            port:
+              number: 8006
   
   # Grafana
   - host: grafana.fkstrading.xyz

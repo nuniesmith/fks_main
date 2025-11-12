@@ -47,7 +47,7 @@ cat > package/manifest.xml << 'EOF'
   <NinjaScriptCollection>
     <n>FKS Trading Systems (Source)</n>
     <Version>1.0.0</Version>
-    <Vendor>FKS Team</Vendor>
+    <Vendor>nuniesmith</Vendor>
     <Description>FKS Trading Systems - Source Code Import</Description>
   </NinjaScriptCollection>
 </NinjaScriptManifest>
@@ -59,7 +59,7 @@ cat > package/Info.xml << 'EOF'
 <NinjaScriptInfo>
   <n>FKS Trading Systems Source</n>
   <Version>1.0.0</Version>
-  <Vendor>FKS Team</Vendor>
+  <Vendor>nuniesmith</Vendor>
   <Description>FKS Trading Systems imported as source code to avoid cross-platform DLL issues</Description>
 </NinjaScriptInfo>
 EOF

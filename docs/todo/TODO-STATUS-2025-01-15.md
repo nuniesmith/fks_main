@@ -1,7 +1,7 @@
 # FKS Todo List Status
 
 **Date**: 2025-01-15  
-**Last Updated**: 2025-01-15  
+**Last Updated**: 2025-11-12  
 **Purpose**: Current status of all active tasks and priorities
 
 ---
@@ -298,6 +298,14 @@
 - ✅ Set up GitHub Actions for docs
 - ✅ Created portfolio optimization templates
 - ✅ Fixed GitHub Actions workflows
+- ✅ Updated AI Context Guide (version 2.1) - All service descriptions updated
+- ✅ Updated service registry (version 1.2) - All service ports and names updated
+- ✅ Configured fks_main as Rust/Axum service
+- ✅ Configured fks_ninja as Python/Rust API service (port 8006)
+- ✅ Configured fks_web port to 3001 (K8s) / 8000 (Docker)
+- ✅ Configured fks_monitor port to 8013
+- ✅ Enabled GPU support for fks_ai
+- ✅ All 14 services configured and documented
 
 ---
 
@@ -305,5 +313,5 @@
 
 **Focus**: Get working Bitcoin signal generation demo for daily manual trading. Expand to other assets later.
 
-**Last Updated**: 2025-01-15
+**Last Updated**: 2025-11-12
 

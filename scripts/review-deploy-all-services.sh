@@ -242,10 +242,10 @@ deploy_all_services() {
         --set fks_meta.enabled=true \
         --set fks_analyze.enabled=true \
         --set fks_training.enabled=true \
-        --set fks_ai.enabled=false \
+        --set fks_ai.enabled=true \
         --set fks_execution.enabled=true \
-        --set fks_web.enabled=false \
-        --set fks_ninja.enabled=false \
+        --set fks_web.enabled=true \
+        --set fks_ninja.enabled=true \
         --set postgresql.enabled=true \
         --set redis.enabled=true \
         --set ingress.enabled=false \
