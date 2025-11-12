@@ -47,8 +47,7 @@ if ! kubectl get secret fks-secrets -n "$NAMESPACE" >/dev/null 2>&1; then
         --from-literal=redis-password=$(openssl rand -base64 32) \
         --from-literal=django-secret-key=$(openssl rand -base64 64) \
         --from-literal=openai-api-key="" \
-        -n "$NAMESPACE" \
-        --dry-run=client -o yaml | kubectl apply -f -
+        -n "$NAMESPACE" || true
     echo -e "${GREEN}✓ Secrets created${NC}"
 else
     echo -e "${GREEN}✓ Secrets already exist${NC}"
@@ -87,6 +86,17 @@ echo -e "${GREEN}✓ Services deployed${NC}"
 echo -e "\n${YELLOW}Deploying ingress...${NC}"
 kubectl apply -f "$K8S_DIR/ingress.yaml" -n "$NAMESPACE"
 echo -e "${GREEN}✓ Ingress deployed${NC}"
+
+# Deploy development volumes (optional, for live code changes)
+echo -e "\n${YELLOW}Setting up development volumes...${NC}"
+kubectl apply -f "$K8S_DIR/manifests/dev-volumes.yaml" -n "$NAMESPACE" || echo -e "${YELLOW}⚠ Development volumes setup skipped${NC}"
+
+# Deploy image auto-updater
+echo -e "\n${YELLOW}Deploying image auto-updater...${NC}"
+kubectl apply -f "$K8S_DIR/manifests/image-auto-updater.yaml" -n "$NAMESPACE"
+echo -e "${GREEN}✓ Image auto-updater deployed${NC}"
+echo "  - CronJob runs every 15 minutes to check for new images"
+echo "  - Deployment runs continuously (alternative mode)"
 
 # Setup Kubernetes Dashboard
 echo -e "\n${YELLOW}Setting up Kubernetes Dashboard...${NC}"

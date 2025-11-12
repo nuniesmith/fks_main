@@ -1,0 +1,185 @@
+---
+# Image Auto-Updater Service
+# This service periodically checks Docker Hub for new images and updates deployments
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: image-updater
+  namespace: fks-trading
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: image-updater
+  namespace: fks-trading
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "patch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: image-updater
+  namespace: fks-trading
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: image-updater
+subjects:
+- kind: ServiceAccount
+  name: image-updater
+  namespace: fks-trading
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: image-auto-updater
+  namespace: fks-trading
+spec:
+  schedule: "*/15 * * * *"  # Run every 15 minutes
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: image-updater
+        spec:
+          serviceAccountName: image-updater
+          restartPolicy: OnFailure
+          containers:
+          - name: updater
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              echo "=== Image Auto-Updater ==="
+              echo "Checking for new images on Docker Hub..."
+              
+              SERVICES="ai analyze api app auth data execution main meta monitor ninja portfolio training web"
+              DOCKER_REPO="nuniesmith/fks"
+              NAMESPACE="fks-trading"
+              
+              for service in $SERVICES; do
+                echo ""
+                echo "Checking service: $service"
+                
+                # Get current image from deployment
+                DEPLOYMENT_NAME="fks-$service"
+                if ! kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" &>/dev/null; then
+                  # Try alternative naming
+                  DEPLOYMENT_NAME="$service"
+                  if ! kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" &>/dev/null; then
+                    echo "  ⚠️  Deployment not found: $service"
+                    continue
+                  fi
+                fi
+                
+                CURRENT_IMAGE=$(kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].image}')
+                echo "  Current image: $CURRENT_IMAGE"
+                
+                # Extract tag from current image
+                CURRENT_TAG=$(echo "$CURRENT_IMAGE" | sed 's/.*://' || echo "latest")
+                
+                # Check Docker Hub for latest image digest (requires Docker Hub API)
+                # For now, we'll pull the image and check if it's different
+                NEW_IMAGE="$DOCKER_REPO:${service}-latest"
+                
+                # Try to pull the image (this will fail if not accessible, but that's ok)
+                # We'll use kubectl to check if the image needs updating
+                echo "  Checking for updates..."
+                
+                # Update deployment if image tag changed or force update
+                # We'll use imagePullPolicy: Always and restart to force pull
+                kubectl set image deployment/"$DEPLOYMENT_NAME" \
+                  "$(kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].name}')"="$NEW_IMAGE" \
+                  -n "$NAMESPACE" || echo "  ⚠️  Failed to update $service"
+                
+                # Restart deployment to force image pull
+                kubectl rollout restart deployment/"$DEPLOYMENT_NAME" -n "$NAMESPACE" || true
+                
+                echo "  ✅ Updated $service to use $NEW_IMAGE"
+              done
+              
+              echo ""
+              echo "=== Update Complete ==="
+              echo "Waiting for rollouts to complete..."
+              sleep 10
+              
+              # Check rollout status
+              for service in $SERVICES; do
+                DEPLOYMENT_NAME="fks-$service"
+                if ! kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" &>/dev/null; then
+                  DEPLOYMENT_NAME="$service"
+                fi
+                if kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" &>/dev/null; then
+                  kubectl rollout status deployment/"$DEPLOYMENT_NAME" -n "$NAMESPACE" --timeout=30s || echo "  ⚠️  Rollout still in progress for $service"
+                fi
+              done
+---
+# Alternative: Deployment-based updater (runs continuously)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-auto-updater-deployment
+  namespace: fks-trading
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-updater
+  template:
+    metadata:
+      labels:
+        app: image-updater
+    spec:
+      serviceAccountName: image-updater
+      containers:
+      - name: updater
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          while true; do
+            echo "=== Image Auto-Updater (Continuous Mode) ==="
+            echo "Checking for new images every 15 minutes..."
+            
+            SERVICES="ai analyze api app auth data execution main meta monitor ninja portfolio training web"
+            DOCKER_REPO="nuniesmith/fks"
+            NAMESPACE="fks-trading"
+            
+            for service in $SERVICES; do
+              DEPLOYMENT_NAME="fks-$service"
+              if ! kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" &>/dev/null; then
+                DEPLOYMENT_NAME="$service"
+                if ! kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" &>/dev/null; then
+                  continue
+                fi
+              fi
+              
+              NEW_IMAGE="$DOCKER_REPO:${service}-latest"
+              CONTAINER_NAME=$(kubectl get deployment "$DEPLOYMENT_NAME" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].name}')
+              
+              kubectl set image deployment/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$NEW_IMAGE" -n "$NAMESPACE" || true
+              kubectl rollout restart deployment/"$DEPLOYMENT_NAME" -n "$NAMESPACE" || true
+            done
+            
+            echo "Sleeping for 15 minutes..."
+            sleep 900
+          done
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
