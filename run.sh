@@ -32,8 +32,8 @@ DEFAULT_TAG="latest"
 
 # List of all services (repos that run as services)
 SERVICES=(
-  "ai" "analyze" "api" "app" "auth" "data" "execution"
-  "main" "meta" "monitor" "portfolio" "ninja" "training" "web"
+  "ai" "analyze" "api" "app" "auth" "data" "execution" "main" "meta"
+  "monitor" "nginx" "portfolio" "ninja" "tailscale" "training" "web"
 )
 
 # List of all repos (includes services + infrastructure + extracted repos)
