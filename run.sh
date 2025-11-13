@@ -38,13 +38,13 @@ SERVICES=(
 
 # List of all repos (includes services + infrastructure + extracted repos)
 REPOS=(
-  # Service repos (14)
-  "ai" "analyze" "api" "app" "auth" "data" "execution"
-  "main" "meta" "monitor" "portfolio" "ninja" "training" "web"
+  # Service repos (16)
+  "ai" "analyze" "api" "app" "auth" "data" "execution" "main"
+  "meta" "monitor" "nginx" "portfolio" "ninja" "tailscale" "training" "web"
   # Infrastructure repos
   "docker" "k8s"
   # Extracted repos (from main)
-  "docs" "scripts" "nginx" "config"
+  "docs" "scripts" "config"
 )
 
 # Python-based services (for venv management)
