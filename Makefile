@@ -358,13 +358,14 @@ jupyter:
 	@echo "Starting Jupyter notebook..."
 	docker-compose exec web jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 
-docs:
-	@echo "Building documentation..."
-	cd docs && mkdocs build
+# Documentation is now in the separate docs repo (fks_docs)
+# docs:
+# 	@echo "Building documentation..."
+# 	cd docs && mkdocs build
 
-docs-serve:
-	@echo "Serving documentation..."
-	cd docs && mkdocs serve
+# docs-serve:
+# 	@echo "Serving documentation..."
+# 	cd docs && mkdocs serve
 
 # Security and validation
 security-setup:

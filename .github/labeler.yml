@@ -1,26 +1,80 @@
-# GitHub Actions Labeler Configuration for FKS Trading Platform
+# GitHub Actions Labeler Configuration for FKS Main Service
 # Automatically applies labels to PRs based on changed files
 
-# Documentation changes
+# Documentation changes (README, etc.)
 documentation:
   - changed-files:
       - any-glob-to-any-file: 
-          - 'docs/**/*'
           - 'README.md'
-          - 'QUICKREF.md'
           - '**/*.md'
-          - '.github/copilot-instructions.md'
+          - '.github/**/*.md'
 
-# Core application code
-code:
+# Rust code (main service)
+rust:
   - changed-files:
-      - any-glob-to-any-file: 'src/**/*.py'
-      - all-globs-to-all-files: '!src/tests/**'
+      - any-glob-to-any-file: 
+          - 'src/**/*.rs'
+          - 'Cargo.toml'
+          - 'Cargo.lock'
 
-# Framework layer (critical - requires extra review)
-framework:
+# Python code (shared services, tests)
+python:
   - changed-files:
-      - any-glob-to-any-file: 'src/framework/**/*.py'
+      - any-glob-to-any-file: 
+          - 'src/**/*.py'
+          - 'requirements*.txt'
+          - 'pyproject.toml'
+          - 'setup.py'
+      - all-globs-to-all-files: '!tests/**'
+
+# Core Rust application code
+core:
+  - changed-files:
+      - any-glob-to-any-file: 
+          - 'src/main.rs'
+          - 'src/config.rs'
+          - 'src/routes.rs'
+          - 'src/k8s.rs'
+          - 'src/monitor.rs'
+
+# Shared Python services
+shared:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/shared/**/*.py'
+          - 'src/services/**/*.py'
+
+# Authentication (security-sensitive)
+auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/authentication/**/*.py'
+          - 'src/authentication/**/*.rs'
+
+# Monitoring and observability
+monitoring:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'monitoring/**/*'
+          - 'src/monitor.rs'
+          - 'src/shared/monitor/**/*.py'
+
+# Kubernetes integration
+kubernetes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'k8s/**/*'
+          - 'src/k8s.rs'
+          - '*.yaml'
+          - '*.yml'
+
+# Test files
+tests:
+  - changed-files:
+      - any-glob-to-any-file: 
+          - 'tests/**/*.rs'
+          - 'tests/**/*.py'
+          - 'pytest.ini'
 
 # Security-sensitive files
 security:
@@ -29,70 +83,19 @@ security:
           - 'requirements*.txt'
           - '.env*'
           - 'docker-compose*.yml'
-          - 'nginx/**/*'
-          - 'src/authentication/**/*.py'
-          - '**/settings.py'
-          - 'secrets/**/*'
+          - 'src/authentication/**/*'
           - '.github/workflows/**'
-
-# Test files
-tests:
-  - changed-files:
-      - any-glob-to-any-file: 
-          - 'tests/**/*.py'
-          - 'pytest.ini'
-          - 'src/tests/**/*.py'
-
-# Database and migrations
-database:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'src/core/database/**/*.py'
-          - '**/migrations/**/*.py'
-          - 'sql/**/*'
-          - 'scripts/setup_database.sh'
-
-# Trading logic
-trading:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'src/trading/**/*.py'
-          - 'src/core/models.py'
-
-# RAG system
-rag:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'src/rag/**/*.py'
-          - 'docker-compose.gpu.yml'
-          - 'requirements.gpu.txt'
-          - 'scripts/setup_rag.sh'
-
-# ML/AI components
-ml:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'src/ml/**/*.py'
-          - 'notebooks/**/*.ipynb'
-          - 'scripts/setup_ml.sh'
-
-# Web UI (Django templates, static files)
-web:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'src/web/**/*'
-          - 'src/web/templates/**/*'
-          - 'src/web/static/**/*'
-          - 'src/api/**/*.py'
+          - 'Cargo.toml'
+          - 'Cargo.lock'
 
 # Docker and infrastructure
 docker:
   - changed-files:
       - any-glob-to-any-file:
-          - 'docker/**/*'
           - 'Dockerfile*'
           - 'docker-compose*.yml'
           - '.dockerignore'
+          - 'entrypoint.sh'
 
 # Configuration files
 config:
@@ -105,35 +108,30 @@ config:
           - '*.cfg'
           - '.github/**/*'
           - 'Makefile'
+          - 'ruff.toml'
+          - 'mypy.ini'
 
 # Scripts and automation
 scripts:
   - changed-files:
       - any-glob-to-any-file:
-          - 'scripts/**/*'
           - '*.sh'
+          - 'scripts/**/*'
 
-# Monitoring and observability
-monitoring:
+# SQL and database
+database:
   - changed-files:
       - any-glob-to-any-file:
-          - 'monitoring/**/*'
-          - 'src/framework/monitoring/**/*.py'
-
-# Celery tasks
-celery:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'src/trading/tasks.py'
-          - 'src/web/django/celery.py'
-          - 'scripts/start_celery.sh'
-          - 'scripts/stop_celery.sh'
+          - 'sql/**/*'
+          - '**/migrations/**/*'
 
 # Dependencies
 dependencies:
   - changed-files:
       - any-glob-to-any-file:
           - 'requirements*.txt'
+          - 'Cargo.toml'
+          - 'Cargo.lock'
           - 'pyproject.toml'
           - 'setup.py'
 
@@ -147,6 +145,7 @@ wip:
 breaking:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/framework/**/*.py'
-          - 'src/core/database/models.py'
-          - '**/settings.py'
+          - 'src/main.rs'
+          - 'src/config.rs'
+          - 'Cargo.toml'
+          - 'src/shared/**/*.py'
