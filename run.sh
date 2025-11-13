@@ -1,16 +1,37 @@
 #!/bin/bash
 # run.sh - Unified Management Script for FKS Microservices
 # Placed at project root (fks_main repo)
-# Handles 14 services across 14 repos
-# Interactive mode for all/specific services
+# Handles 16 services across multiple repos
+# Interactive and CLI modes for all/specific services
 # Manages venvs for Python services
 # Integrates with GitHub Actions for Docker builds/pushes to nuniesmith/fks
-# Supports Docker Compose and basic K8s ops
+# Supports Docker Compose and Helm-based K8s ops
 # Added GitHub Actions workflow status checker
-# Added Minikube and Docker installation for Ubuntu if not available
+# Added Minikube, Docker, and Helm installation with broader OS support
+# Added parallel processing, Trivy scanning, and CLI mode
 # Don't exit on error in main loop - we want to handle errors gracefully
 # Use 'set -e' in individual functions where appropriate
 set +e
+
+# Cleanup function for trap (runs on exit)
+cleanup() {
+  # Clean up any temporary files or background jobs
+  local jobs_pids
+  jobs_pids=$(jobs -p 2>/dev/null || true)
+  if [ -n "$jobs_pids" ]; then
+    # Use xargs -r only if available (Linux), otherwise use a workaround
+    if command -v xargs &>/dev/null && xargs --help 2>&1 | grep -q "\-r"; then
+      echo "$jobs_pids" | xargs -r kill 2>/dev/null || true
+    else
+      # Fallback for systems without -r flag (macOS, BSD)
+      for pid in $jobs_pids; do
+        kill "$pid" 2>/dev/null || true
+      done
+    fi
+  fi
+}
+
+trap cleanup EXIT INT TERM
 
 # Colors for output
 RED='\033[0;31m'
@@ -26,9 +47,12 @@ SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURC
 PROJECT_ROOT="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 # Services are in the parent directory (repo/main/run.sh -> repo/)
 REPO_DIR="$(cd "$PROJECT_ROOT/.." && pwd)"
-DOCKER_USERNAME="nuniesmith"
-DOCKER_REPO="fks"
-DEFAULT_TAG="latest"
+# Use environment variables with defaults for flexibility
+DOCKER_USERNAME="${DOCKER_USERNAME:-nuniesmith}"
+DOCKER_REPO="${DOCKER_REPO:-fks}"
+DEFAULT_TAG="${DEFAULT_TAG:-latest}"
+ENABLE_TRIVY_SCAN="${ENABLE_TRIVY_SCAN:-false}"
+ENABLE_PARALLEL_BUILD="${ENABLE_PARALLEL_BUILD:-true}"
 
 # List of all services (repos that run as services)
 SERVICES=(
@@ -42,7 +66,7 @@ REPOS=(
   "ai" "analyze" "api" "app" "auth" "data" "execution" "main"
   "meta" "monitor" "nginx" "portfolio" "ninja" "tailscale" "training" "web"
   # Infrastructure repos
-  "docker" "k8s"
+  "docker"
   # Extracted repos (from main)
   "docs" "scripts" "config"
 )
@@ -59,45 +83,90 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-# Check if running on Ubuntu
-is_ubuntu() {
+# Get OS type
+get_os() {
   if [ -f /etc/os-release ]; then
     . /etc/os-release
-    if [ "$ID" = "ubuntu" ]; then
-      return 0
-    fi
+    echo "$ID"
+  else
+    uname -s | tr '[:upper:]' '[:lower:]'
   fi
-  return 1
 }
 
-# Install Docker if not available (for Ubuntu)
-install_docker() {
-  if ! is_ubuntu; then
-    log_error "Docker installation is only supported for Ubuntu in this script."
+# Check if running on Ubuntu/Debian
+is_ubuntu() {
+  local os=$(get_os)
+  [ "$os" = "ubuntu" ] || [ "$os" = "debian" ]
+}
+
+# Check if running on macOS
+is_macos() {
+  [[ "$(uname -s)" == "Darwin" ]]
+}
+
+# Dependency check (fail fast for critical tools)
+check_dependencies() {
+  local missing=()
+  local optional=()
+  
+  # Critical dependencies
+  for dep in git docker; do
+    if ! command -v "$dep" &>/dev/null; then
+      missing+=("$dep")
+    fi
+  done
+  
+  # Optional but recommended
+  for dep in kubectl minikube helm gh trivy; do
+    if ! command -v "$dep" &>/dev/null; then
+      optional+=("$dep")
+    fi
+  done
+  
+  if [ ${#missing[@]} -gt 0 ]; then
+    log_error "Missing critical dependencies: ${missing[*]}"
+    log_info "Install them first or use the installation functions in this script"
     return 1
   fi
-
-  log_info "Installing Docker on Ubuntu..."
-  sudo apt-get update || { log_error "apt update failed"; return 1; }
-  sudo apt-get install -y ca-certificates curl || { log_error "Prerequisite packages failed"; return 1; }
-  sudo install -m 0755 -d /etc/apt/keyrings
-  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc || { log_error "GPG key download failed"; return 1; }
-  sudo chmod a+r /etc/apt/keyrings/docker.asc
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$UBUNTU_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  sudo apt-get update || { log_error "apt update failed after adding repo"; return 1; }
-  sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { log_error "Docker installation failed"; return 1; }
-  sudo usermod -aG docker $USER || log_warning "Failed to add user to docker group; may need manual sudo for docker commands."
-  log_success "Docker installed. Log out and back in for group changes to take effect."
+  
+  if [ ${#optional[@]} -gt 0 ]; then
+    log_warning "Optional dependencies not found: ${optional[*]}"
+    log_info "Some features may not be available"
+  fi
+  
   return 0
 }
 
-# Install Minikube if not available (for Ubuntu)
-install_minikube() {
-  if ! is_ubuntu; then
-    log_error "Minikube installation is only supported for Ubuntu in this script."
+# Install Docker (expanded OS support)
+install_docker() {
+  local os=$(get_os)
+  
+  if is_ubuntu || [ "$os" = "debian" ]; then
+    log_info "Installing Docker on $os..."
+    sudo apt-get update || { log_error "apt update failed"; return 1; }
+    sudo apt-get install -y ca-certificates curl gnupg || { log_error "Prerequisite packages failed"; return 1; }
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL "https://download.docker.com/linux/$os/gpg" -o /etc/apt/keyrings/docker.asc || { log_error "GPG key download failed"; return 1; }
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/$os $(. /etc/os-release && echo "$UBUNTU_CODENAME" || echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update || { log_error "apt update failed after adding repo"; return 1; }
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || { log_error "Docker installation failed"; return 1; }
+    sudo usermod -aG docker "$USER" || log_warning "Failed to add user to docker group; may need manual sudo for docker commands."
+    log_success "Docker installed. Log out and back in for group changes to take effect."
+    return 0
+  elif is_macos; then
+    log_info "For macOS, please install Docker Desktop: https://www.docker.com/products/docker-desktop"
+    log_info "Or use Homebrew: brew install --cask docker"
+    return 1
+  else
+    log_error "Docker installation not supported for OS: $os"
+    log_info "Please install Docker manually for your OS"
     return 1
   fi
+}
 
+# Install Minikube (expanded OS support)
+install_minikube() {
   # Check for Docker first, as it's a prerequisite
   if ! command -v docker &> /dev/null; then
     log_warning "Docker is required for Minikube but not installed."
@@ -110,12 +179,72 @@ install_minikube() {
     fi
   fi
 
-  log_info "Installing Minikube on Ubuntu..."
-  curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64 || { log_error "Download failed"; return 1; }
-  sudo install minikube-linux-amd64 /usr/local/bin/minikube || { log_error "Installation failed"; return 1; }
-  rm minikube-linux-amd64
+  if is_macos; then
+    log_info "Installing Minikube on macOS..."
+    if command -v brew &>/dev/null; then
+      brew install minikube || { log_error "Homebrew installation failed"; return 1; }
+    else
+      log_info "Please install Homebrew first: https://brew.sh"
+      log_info "Or install manually: https://minikube.sigs.k8s.io/docs/start/"
+      return 1
+    fi
+  else
+    log_info "Installing Minikube on Linux..."
+    curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64 || { log_error "Download failed"; return 1; }
+    sudo install minikube-linux-amd64 /usr/local/bin/minikube || { log_error "Installation failed"; return 1; }
+    rm minikube-linux-amd64
+  fi
   log_success "Minikube installed."
   return 0
+}
+
+# Install Helm
+install_helm() {
+  log_info "Installing Helm..."
+  if is_macos && command -v brew &>/dev/null; then
+    brew install helm || { log_error "Homebrew installation failed"; return 1; }
+  else
+    curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 || { log_error "Download failed"; return 1; }
+    chmod 700 get_helm.sh
+    bash get_helm.sh || { log_error "Installation failed"; return 1; }
+    rm get_helm.sh
+  fi
+  log_success "Helm installed (version: $(helm version --short 2>/dev/null || echo 'unknown'))."
+  return 0
+}
+
+# Install Trivy (for vulnerability scanning)
+install_trivy() {
+  log_info "Installing Trivy for image scanning..."
+  if is_macos && command -v brew &>/dev/null; then
+    brew install aquasecurity/trivy/trivy || { log_error "Homebrew installation failed"; return 1; }
+  else
+    sudo apt-get update || true
+    sudo apt-get install -y wget apt-transport-https gnupg lsb-release || { log_error "Prerequisite installation failed"; return 1; }
+    wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+    echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+    sudo apt-get update || { log_error "apt update failed"; return 1; }
+    sudo apt-get install -y trivy || { log_error "Trivy installation failed"; return 1; }
+  fi
+  log_success "Trivy installed."
+  return 0
+}
+
+# Scan Docker image with Trivy (optional)
+scan_image() {
+  local image_name="$1"
+  
+  if [ "$ENABLE_TRIVY_SCAN" != "true" ]; then
+    return 0  # Skip scanning if disabled
+  fi
+  
+  if ! command -v trivy &>/dev/null; then
+    log_warning "Trivy not found. Install with: install_trivy"
+    return 0  # Don't fail build if Trivy not available
+  fi
+  
+  log_info "Scanning $image_name for vulnerabilities..."
+  trivy image --exit-code 0 --severity HIGH,CRITICAL "$image_name" || log_warning "Scan found issues; review output."
 }
 
 # Get service path (alias for get_repo_path for backward compatibility)
@@ -166,10 +295,127 @@ manage_venv() {
   return 0
 }
 
-# Build Docker image for service
+# Build Docker base images
+build_base_images() {
+  local push_to_hub="${1:-false}"
+
+  local docker_dir="$REPO_DIR/docker"
+  if [ ! -d "$docker_dir" ]; then
+    log_error "Docker directory not found: $docker_dir"
+    return 1
+  fi
+
+  cd "$docker_dir"
+
+  log_info "Building Docker base images..."
+
+  # Build CPU base (docker)
+  log_info "Building CPU base image (docker)..."
+  set -e  # Enable strict mode for builds
+  if docker build -t "$DOCKER_USERNAME/$DOCKER_REPO:docker" -f Dockerfile.builder .; then
+    set +e
+    log_success "CPU base image built"
+    scan_image "$DOCKER_USERNAME/$DOCKER_REPO:docker"
+    if [ "$push_to_hub" = "true" ]; then
+      log_info "Pushing CPU base image to Docker Hub..."
+      docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker" || log_warning "Failed to push CPU base"
+    fi
+  else
+    set +e
+    log_error "Failed to build CPU base image"
+    return 1
+  fi
+
+  # Build ML base (docker-ml) - depends on docker
+  log_info "Building ML base image (docker-ml)..."
+  set -e
+  if docker build -t "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml" -f Dockerfile.ml .; then
+    set +e
+    log_success "ML base image built"
+    scan_image "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml"
+    if [ "$push_to_hub" = "true" ]; then
+      log_info "Pushing ML base image to Docker Hub..."
+      docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml" || log_warning "Failed to push ML base"
+    fi
+  else
+    set +e
+    log_error "Failed to build ML base image"
+    return 1
+  fi
+
+  # Build GPU base (docker-gpu) - depends on docker-ml
+  log_info "Building GPU base image (docker-gpu)..."
+  set -e
+  if docker build -t "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu" -f Dockerfile.gpu .; then
+    set +e
+    log_success "GPU base image built"
+    scan_image "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu"
+    if [ "$push_to_hub" = "true" ]; then
+      log_info "Pushing GPU base image to Docker Hub..."
+      docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu" || log_warning "Failed to push GPU base"
+    fi
+  else
+    set +e
+    log_error "Failed to build GPU base image"
+    return 1
+  fi
+
+  log_success "All base images built successfully"
+  return 0
+}
+
+# Push Docker image to Docker Hub
+push_docker_image() {
+  local service="$1"
+  local tag="${2:-$DEFAULT_TAG}"
+  
+  # Handle base images differently (they don't have service-tag format)
+  local image_name
+  if [ "$service" = "docker" ] || [ "$service" = "docker-ml" ] || [ "$service" = "docker-gpu" ]; then
+    image_name="$DOCKER_USERNAME/$DOCKER_REPO:$service"
+  else
+    image_name="$DOCKER_USERNAME/$DOCKER_REPO:${service}-${tag}"
+  fi
+
+  log_info "Pushing $image_name to Docker Hub..."
+
+  # Check if image exists locally
+  if ! docker image inspect "$image_name" &>/dev/null; then
+    log_error "Image not found locally: $image_name"
+    if [ "$service" = "docker" ] || [ "$service" = "docker-ml" ] || [ "$service" = "docker-gpu" ]; then
+      log_info "Build the base image first using menu option 2a"
+    else
+      log_info "Build the image first using menu option 2"
+    fi
+    return 1
+  fi
+
+  # Check if logged in to Docker Hub
+  if ! docker info 2>/dev/null | grep -q "Username"; then
+    log_warning "Not logged in to Docker Hub"
+    log_info "Please login first: docker login"
+    read -p "Login to Docker Hub now? (y/n): " login_choice
+    if [ "$login_choice" = "y" ]; then
+      docker login -u "$DOCKER_USERNAME" || { log_error "Login failed"; return 1; }
+    else
+      return 1
+    fi
+  fi
+
+  if docker push "$image_name"; then
+    log_success "Pushed $image_name to Docker Hub"
+    return 0
+  else
+    log_error "Failed to push $image_name"
+    return 1
+  fi
+}
+
+# Build Docker image for service (with optional scanning)
 build_docker() {
   local service="$1"
   local tag="${2:-$DEFAULT_TAG}"
+  local push="${3:-false}"
 
   local service_path=$(get_service_path "$service")
   if [ ! -d "$service_path" ]; then
@@ -179,17 +425,42 @@ build_docker() {
 
   cd "$service_path"
 
-  if [ ! -f "Dockerfile" ]; then
-    log_warning "No Dockerfile found for $service - skipping build"
-    return 1
+  # Check for Dockerfile in service directory first
+  local dockerfile="Dockerfile"
+  if [ ! -f "$dockerfile" ]; then
+    # Check for Dockerfile in docker directory
+    local docker_dir="$REPO_DIR/docker"
+    if [ -f "$docker_dir/Dockerfile.$service" ]; then
+      dockerfile="$docker_dir/Dockerfile.$service"
+      log_info "Using Dockerfile from docker directory: $dockerfile"
+    else
+      log_warning "No Dockerfile found for $service - skipping build"
+      return 1
+    fi
   fi
 
   # Use same naming convention as GitHub Actions: nuniesmith/fks:service-tag
   local image_name="$DOCKER_USERNAME/$DOCKER_REPO:${service}-${tag}"
   log_info "Building Docker image: $image_name"
 
-  docker build -t "$image_name" . || { log_error "Build failed for $service"; return 1; }
+  # Build from service directory with dockerfile path
+  set -e  # Enable strict mode for build
+  if [ "$dockerfile" = "Dockerfile" ]; then
+    docker build -t "$image_name" . || { log_error "Build failed for $service"; set +e; return 1; }
+  else
+    docker build -f "$dockerfile" -t "$image_name" . || { log_error "Build failed for $service"; set +e; return 1; }
+  fi
+  set +e  # Disable strict mode after build
+
   log_success "Built $image_name successfully"
+
+  # Scan image if enabled
+  scan_image "$image_name"
+
+  # Push if requested
+  if [ "$push" = "true" ]; then
+    push_docker_image "$service" "$tag"
+  fi
 
   return 0
 }
@@ -253,6 +524,7 @@ get_repo_path() {
 commit_push() {
   local repo="$1"
   local message="${2:-chore: auto update $(date +'%Y-%m-%d %H:%M')}"
+  local skip_preview="${3:-false}"
 
   local repo_path=$(get_repo_path "$repo")
   if [ ! -d "$repo_path" ]; then
@@ -284,19 +556,37 @@ commit_push() {
     return 0
   fi
 
+  # Show diff preview if not skipping
+  if [ "$skip_preview" != "true" ]; then
+    log_info "Changes to be committed:"
+    git diff --cached --stat
+    echo ""
+    read -p "Confirm commit? (y/n): " confirm
+    if [ "$confirm" != "y" ]; then
+      log_info "Commit cancelled"
+      git reset HEAD .  # Unstage changes
+      return 1
+    fi
+  fi
+
   log_info "Committing changes in $repo..."
-  git commit -m "$message" || { log_error "Commit failed"; return 1; }
+  set -e  # Enable strict mode for git operations
+  git commit -m "$message" || { log_error "Commit failed"; set +e; return 1; }
+  set +e
 
   log_info "Pushing to remote..."
   # Push to current branch (supports both main and master)
+  set -e
   if git push origin "$current_branch"; then
+    set +e
     log_success "$repo committed and pushed to $current_branch"
     # Only mention GitHub Actions for services
     if [[ " ${SERVICES[*]} " =~ " ${repo} " ]]; then
-      log_info "GitHub Actions will build and push to dockerhub.com/nuniesmith/fks:${repo}-latest"
+      log_info "GitHub Actions will build and push to dockerhub.com/$DOCKER_USERNAME/$DOCKER_REPO:${repo}-latest"
     fi
     return 0
   else
+    set +e
     log_error "Push failed for $repo"
     return 1
   fi
@@ -732,14 +1022,14 @@ sync_and_update_k8s() {
   log_info "View pod status with: kubectl get pods -n $namespace"
 }
 
-# Kubernetes basic operations (from provided scripts)
+# Kubernetes basic operations (with Helm support)
 k8s_start() {
   log_info "Starting Kubernetes deployment..."
 
   # Check if minikube is available, install if not
   if ! command -v minikube &> /dev/null; then
     log_warning "Minikube not installed."
-    read -p "Install Minikube now (Ubuntu only)? (y/n): " install_choice
+    read -p "Install Minikube now? (y/n): " install_choice
     if [ "$install_choice" = "y" ]; then
       install_minikube || { log_error "Minikube installation failed"; return 1; }
     else
@@ -756,8 +1046,10 @@ k8s_start() {
 
   # Start minikube
   log_info "Starting minikube..."
-  minikube start || { log_error "Minikube start failed"; return 1; }
+  set -e
+  minikube start || { log_error "Minikube start failed"; set +e; return 1; }
   eval $(minikube docker-env)
+  set +e
   log_success "Minikube started"
 
   # Enable ingress addon
@@ -765,7 +1057,7 @@ k8s_start() {
   minikube addons enable ingress || log_warning "Failed to enable ingress (may already be enabled)"
 
   # Default to pulling from Docker Hub (all images are built via GitHub Actions)
-  log_info "Pulling images from Docker Hub (nuniesmith/fks)..."
+  log_info "Pulling images from Docker Hub ($DOCKER_USERNAME/$DOCKER_REPO)..."
   sync_images "true" "${SERVICES[@]}" || log_warning "Some images failed to pull, but continuing..."
 
   # Ask for namespace
@@ -776,39 +1068,67 @@ k8s_start() {
   kubectl create namespace "$namespace" 2>/dev/null || true
   log_success "Namespace $namespace ready"
 
-  # Check if setup script exists and use it, otherwise apply manifests manually
-  if [ -f "$PROJECT_ROOT/k8s/setup-local-k8s.sh" ]; then
-    log_info "Using setup script for complete deployment..."
-    read -p "Run full setup script (creates secrets, deploys all services, sets up dashboard)? (y/n) [y]: " use_setup
-    use_setup=${use_setup:-y}
+  # Check for Helm chart first, then fall back to manifests
+  local helm_chart_dir="$PROJECT_ROOT/k8s/charts/fks-platform"
+  if [ -d "$helm_chart_dir" ] && command -v helm &>/dev/null; then
+    log_info "Using Helm chart for deployment..."
+    read -p "Use Helm for deployment? (y/n) [y]: " use_helm
+    use_helm=${use_helm:-y}
     
-    if [ "$use_setup" = "y" ]; then
-      # Run setup script but skip minikube start (already done)
-      log_info "Running setup script..."
-      cd "$PROJECT_ROOT/k8s"
-      bash setup-local-k8s.sh || { log_error "Setup script failed"; return 1; }
-      log_success "Setup complete!"
+    if [ "$use_helm" = "y" ]; then
+      if ! command -v helm &>/dev/null; then
+        log_warning "Helm not installed. Installing..."
+        install_helm || { log_error "Helm installation failed"; return 1; }
+      fi
+      
+      # Check if release exists
+      if helm list -n "$namespace" | grep -q "fks-platform"; then
+        log_info "Upgrading existing Helm release..."
+        helm upgrade fks-platform "$helm_chart_dir" -n "$namespace" --timeout 10m || log_warning "Helm upgrade may have issues"
+      else
+        log_info "Installing Helm release..."
+        helm install fks-platform "$helm_chart_dir" -n "$namespace" --create-namespace --timeout 10m || log_warning "Helm install may have issues"
+      fi
+      log_success "Helm deployment complete!"
+    fi
+  fi
+
+  # Fall back to manifests if Helm not used or not available
+  if [ "${use_helm:-n}" != "y" ] || [ ! -d "$helm_chart_dir" ]; then
+    # Check if setup script exists and use it, otherwise apply manifests manually
+    if [ -f "$PROJECT_ROOT/k8s/setup-local-k8s.sh" ]; then
+      log_info "Using setup script for complete deployment..."
+      read -p "Run full setup script (creates secrets, deploys all services, sets up dashboard)? (y/n) [y]: " use_setup
+      use_setup=${use_setup:-y}
+      
+      if [ "$use_setup" = "y" ]; then
+        # Run setup script but skip minikube start (already done)
+        log_info "Running setup script..."
+        cd "$PROJECT_ROOT/k8s"
+        bash setup-local-k8s.sh || { log_error "Setup script failed"; return 1; }
+        log_success "Setup complete!"
+      else
+        # Apply manifests manually
+        log_info "Applying Kubernetes manifests manually..."
+        if [ -f "$PROJECT_ROOT/k8s/manifests/all-services.yaml" ]; then
+          kubectl apply -f "$PROJECT_ROOT/k8s/manifests/all-services.yaml" -n "$namespace" || log_warning "Some resources may have failed"
+        fi
+        if [ -f "$PROJECT_ROOT/k8s/manifests/missing-services.yaml" ]; then
+          kubectl apply -f "$PROJECT_ROOT/k8s/manifests/missing-services.yaml" -n "$namespace" || log_warning "Some resources may have failed"
+        fi
+        if [ -f "$PROJECT_ROOT/k8s/ingress.yaml" ]; then
+          kubectl apply -f "$PROJECT_ROOT/k8s/ingress.yaml" -n "$namespace" || log_warning "Ingress setup may have failed"
+        fi
+      fi
     else
       # Apply manifests manually
-      log_info "Applying Kubernetes manifests manually..."
-      if [ -f "$PROJECT_ROOT/k8s/manifests/all-services.yaml" ]; then
-        kubectl apply -f "$PROJECT_ROOT/k8s/manifests/all-services.yaml" -n "$namespace" || log_warning "Some resources may have failed"
-      fi
-      if [ -f "$PROJECT_ROOT/k8s/manifests/missing-services.yaml" ]; then
-        kubectl apply -f "$PROJECT_ROOT/k8s/manifests/missing-services.yaml" -n "$namespace" || log_warning "Some resources may have failed"
+      log_info "Applying Kubernetes manifests from $PROJECT_ROOT/k8s..."
+      if [ -d "$PROJECT_ROOT/k8s/manifests" ]; then
+        kubectl apply -f "$PROJECT_ROOT/k8s/manifests" -n "$namespace" || log_warning "Some resources may have failed"
       fi
       if [ -f "$PROJECT_ROOT/k8s/ingress.yaml" ]; then
         kubectl apply -f "$PROJECT_ROOT/k8s/ingress.yaml" -n "$namespace" || log_warning "Ingress setup may have failed"
       fi
-    fi
-  else
-    # Apply manifests manually
-    log_info "Applying Kubernetes manifests from $PROJECT_ROOT/k8s..."
-    if [ -d "$PROJECT_ROOT/k8s/manifests" ]; then
-      kubectl apply -f "$PROJECT_ROOT/k8s/manifests" -n "$namespace" || log_warning "Some resources may have failed"
-    fi
-    if [ -f "$PROJECT_ROOT/k8s/ingress.yaml" ]; then
-      kubectl apply -f "$PROJECT_ROOT/k8s/ingress.yaml" -n "$namespace" || log_warning "Ingress setup may have failed"
     fi
   fi
 
@@ -817,7 +1137,7 @@ k8s_start() {
   setup_dashboard_easy_auth
 
   log_success "Kubernetes started and configured"
-  log_info "Services are pulling images from Docker Hub: nuniesmith/fks:<service>-latest"
+  log_info "Services are pulling images from Docker Hub: $DOCKER_USERNAME/$DOCKER_REPO:<service>-latest"
   log_info "To sync images later, use menu option 11 (Sync Images from Docker Hub)"
   log_info "To update deployments, use menu option 12 (Sync Images & Update Kubernetes Deployments)"
   
@@ -986,47 +1306,80 @@ k8s_stop() {
 show_menu() {
   echo -e "${CYAN}=== FKS Microservices Manager ===${NC}"
   echo "1. Manage Venvs (Python services)"
-  echo "2. Build Docker Images"
+  echo "2. Build Docker Images (Services)"
+  echo "2a. Build Docker Base Images (docker, docker-ml, docker-gpu)"
   echo "3. Start Services (Docker Compose)"
   echo "4. Stop Services"
   echo "5. Commit & Push (All repos or services only)"
   echo "6. Analyze Codebase"
   echo "7. Check GitHub Actions Status"
-  echo "8. Kubernetes Start (Pulls from Docker Hub by default)"
+  echo "8. Kubernetes Start (Helm or Manifests)"
   echo "9. Kubernetes Stop"
   echo "10. Pull Images from Docker Hub (Local)"
   echo "11. Pull Images from Docker Hub (Minikube)"
   echo "12. Sync Images & Update Kubernetes Deployments"
   echo "13. Access Kubernetes Dashboard"
-  echo "14. Exit"
+  echo "14. Push Images to Docker Hub"
+  echo "15. Install Tools (Docker/Minikube/Helm/Trivy)"
+  echo "16. Exit"
   echo ""
   echo -e "${YELLOW}Note:${NC} Services: ${#SERVICES[@]}, Total Repos: ${#REPOS[@]}"
   echo ""
   read -p "Enter choice: " choice
 }
 
-# Handle all or specific services
+# Handle all or specific services (with optional parallel processing)
 handle_all_or_specific() {
   local action_func="$1"
   shift
   local extra_args=("$@")
+  local enable_parallel="${ENABLE_PARALLEL_BUILD:-true}"
 
   read -p "All services (a) or specific (s)? " mode
   if [ "$mode" = "a" ]; then
     local failed_services=()
     local success_count=0
-    for service in "${SERVICES[@]}"; do
-      log_info "Processing $service..."
-      if "$action_func" "$service" "${extra_args[@]}" 2>&1; then
-        success_count=$((success_count + 1))
-      else
-        failed_services+=("$service")
-      fi
-    done
+    local pids=()
+    
+    # Use parallel processing for builds if enabled and building
+    if [ "$enable_parallel" = "true" ] && [[ "$action_func" == *"build"* ]] && [ ${#SERVICES[@]} -gt 3 ]; then
+      log_info "Building services in parallel..."
+      for service in "${SERVICES[@]}"; do
+        log_info "Starting build for $service..."
+        "$action_func" "$service" "${extra_args[@]}" > "/tmp/build-$service.log" 2>&1 &
+        pids+=("$service:$!")
+      done
+      
+      # Wait for all background jobs and collect results
+      for pid_entry in "${pids[@]}"; do
+        IFS=':' read -r service pid <<< "$pid_entry"
+        if wait "$pid"; then
+          success_count=$((success_count + 1))
+          log_success "$service built successfully"
+        else
+          failed_services+=("$service")
+          log_error "$service build failed (check /tmp/build-$service.log)"
+        fi
+      done
+    else
+      # Sequential processing
+      for service in "${SERVICES[@]}"; do
+        log_info "Processing $service..."
+        if "$action_func" "$service" "${extra_args[@]}" 2>&1; then
+          success_count=$((success_count + 1))
+        else
+          failed_services+=("$service")
+        fi
+      done
+    fi
+    
     echo ""
     log_info "Completed: $success_count/${#SERVICES[@]} services succeeded"
     if [ ${#failed_services[@]} -gt 0 ]; then
       log_warning "Failed services: ${failed_services[*]}"
+      if [ "$enable_parallel" = "true" ]; then
+        log_info "Check logs: /tmp/build-<service>.log"
+      fi
     fi
   else
     read -p "Enter service name (comma-separated for multiple): " input_services
@@ -1048,7 +1401,79 @@ handle_all_or_specific() {
   fi
 }
 
-# Main loop
+# CLI mode with getopts (non-interactive)
+parse_cli_args() {
+  local build_service=""
+  local push_service=""
+  local build_base=false
+  local push_all=false
+  
+  while getopts "b:p:BPhv" opt; do
+    case $opt in
+      b)
+        build_service="$OPTARG"
+        log_info "CLI mode: Building service $build_service"
+        build_docker "$build_service" "$DEFAULT_TAG" "false"
+        ;;
+      p)
+        push_service="$OPTARG"
+        log_info "CLI mode: Pushing service $push_service"
+        push_docker_image "$push_service" "$DEFAULT_TAG"
+        ;;
+      B)
+        build_base=true
+        log_info "CLI mode: Building base images"
+        build_base_images "false"
+        ;;
+      P)
+        push_all=true
+        log_info "CLI mode: Pushing all images"
+        for service in "${SERVICES[@]}"; do
+          push_docker_image "$service" "$DEFAULT_TAG" || log_warning "Failed to push $service"
+        done
+        ;;
+      h)
+        echo "Usage: $0 [OPTIONS]"
+        echo "Options:"
+        echo "  -b SERVICE    Build Docker image for service"
+        echo "  -p SERVICE    Push Docker image for service"
+        echo "  -B            Build base images"
+        echo "  -P            Push all service images"
+        echo "  -v            Enable verbose output"
+        echo "  -h            Show this help message"
+        echo ""
+        echo "Environment variables:"
+        echo "  DOCKER_USERNAME      Docker Hub username (default: nuniesmith)"
+        echo "  DOCKER_REPO          Docker Hub repository (default: fks)"
+        echo "  DEFAULT_TAG          Image tag (default: latest)"
+        echo "  ENABLE_TRIVY_SCAN    Enable Trivy scanning (default: false)"
+        echo "  ENABLE_PARALLEL_BUILD Enable parallel builds (default: true)"
+        exit 0
+        ;;
+      v)
+        set -x  # Enable verbose output
+        ;;
+      \?)
+        log_error "Invalid option: -$OPTARG"
+        echo "Use -h for help"
+        exit 1
+        ;;
+    esac
+  done
+  
+  # If CLI args were provided, exit after processing
+  if [ $OPTIND -gt 1 ]; then
+    exit 0
+  fi
+}
+
+# Check dependencies on startup (non-fatal, just warnings)
+check_dependencies || log_warning "Some features may not work properly"
+
+# Parse CLI arguments first (will exit if args provided)
+parse_cli_args "$@"
+
+# Main loop (interactive mode)
 while true; do
   show_menu
 
@@ -1061,7 +1486,22 @@ while true; do
     2)
       read -p "Enter tag (default: latest): " tag
       tag=${tag:-latest}
-      handle_all_or_specific build_docker "$tag"
+      read -p "Push to Docker Hub after build? (y/n): " push_choice
+      push_choice=${push_choice:-n}
+      if [ "$push_choice" = "y" ]; then
+        handle_all_or_specific build_docker "$tag" "true"
+      else
+        handle_all_or_specific build_docker "$tag" "false"
+      fi
+      ;;
+    2a|2A)
+      read -p "Push base images to Docker Hub after build? (y/n): " push_choice
+      push_choice=${push_choice:-n}
+      if [ "$push_choice" = "y" ]; then
+        build_base_images "true"
+      else
+        build_base_images "false"
+      fi
       ;;
     3)
       handle_all_or_specific start_service
@@ -1074,6 +1514,8 @@ while true; do
       repo_mode=${repo_mode:-s}
       read -p "Enter commit message (default: chore: auto update): " message
       message=${message:-"chore: auto update"}
+      read -p "Skip diff preview? (y/n) [n]: " skip_preview
+      skip_preview=${skip_preview:-n}
       if [ "$repo_mode" = "r" ]; then
         # Commit all repos
         read -p "All repos (a) or specific (s)? " mode
@@ -1082,7 +1524,7 @@ while true; do
           success_count=0
           for repo in "${REPOS[@]}"; do
             log_info "Processing $repo..."
-            if commit_push "$repo" "$message" 2>&1; then
+            if commit_push "$repo" "$message" "$([ "$skip_preview" = "y" ] && echo "true" || echo "false")" 2>&1; then
               success_count=$((success_count + 1))
             else
               failed_repos+=("$repo")
@@ -1098,12 +1540,25 @@ while true; do
           IFS=',' read -ra selected <<< "$input_repos"
           for repo in "${selected[@]}"; do
             repo=$(echo "$repo" | tr -d ' ')
-            commit_push "$repo" "$message" || log_error "Failed to process $repo"
+            commit_push "$repo" "$message" "$([ "$skip_preview" = "y" ] && echo "true" || echo "false")" || log_error "Failed to process $repo"
           done
         fi
       else
         # Commit services only (original behavior)
-        handle_all_or_specific commit_push "$message"
+        # Note: commit_push doesn't work well with handle_all_or_specific due to interactive prompts
+        read -p "All services (a) or specific (s)? " mode
+        if [ "$mode" = "a" ]; then
+          for service in "${SERVICES[@]}"; do
+            commit_push "$service" "$message" "$([ "$skip_preview" = "y" ] && echo "true" || echo "false")" || log_warning "Failed to commit $service"
+          done
+        else
+          read -p "Enter service name (comma-separated for multiple): " input_services
+          IFS=',' read -ra selected <<< "$input_services"
+          for service in "${selected[@]}"; do
+            service=$(echo "$service" | tr -d ' ')
+            commit_push "$service" "$message" "$([ "$skip_preview" = "y" ] && echo "true" || echo "false")" || log_error "Failed to process $service"
+          done
+        fi
       fi
       ;;
     6)
@@ -1252,6 +1707,76 @@ while true; do
       fi
       ;;
     14)
+      read -p "Push base images (b), service images (s), or all (a)? [s]: " image_type
+      image_type=${image_type:-s}
+      read -p "Enter tag (default: latest): " tag
+      tag=${tag:-latest}
+      
+      if [ "$image_type" = "b" ]; then
+        log_info "Pushing base images to Docker Hub..."
+        push_docker_image "docker" "" || log_warning "Failed to push docker base"
+        push_docker_image "docker-ml" "" || log_warning "Failed to push docker-ml base"
+        push_docker_image "docker-gpu" "" || log_warning "Failed to push docker-gpu base"
+      elif [ "$image_type" = "a" ]; then
+        log_info "Pushing base images..."
+        push_docker_image "docker" "" || log_warning "Failed to push docker base"
+        push_docker_image "docker-ml" "" || log_warning "Failed to push docker-ml base"
+        push_docker_image "docker-gpu" "" || log_warning "Failed to push docker-gpu base"
+        echo ""
+        log_info "Pushing service images..."
+        read -p "Push all services (a) or specific (s)? [a]: " mode
+        mode=${mode:-a}
+        if [ "$mode" = "a" ]; then
+          for service in "${SERVICES[@]}"; do
+            push_docker_image "$service" "$tag" || log_warning "Failed to push $service"
+          done
+        else
+          read -p "Enter service name (comma-separated): " input_services
+          IFS=',' read -ra selected <<< "$input_services"
+          for service in "${selected[@]}"; do
+            service=$(echo "$service" | tr -d ' ')
+            push_docker_image "$service" "$tag" || log_warning "Failed to push $service"
+          done
+        fi
+      else
+        read -p "Push all services (a) or specific (s)? [a]: " mode
+        mode=${mode:-a}
+        if [ "$mode" = "a" ]; then
+          for service in "${SERVICES[@]}"; do
+            push_docker_image "$service" "$tag" || log_warning "Failed to push $service"
+          done
+        else
+          read -p "Enter service name (comma-separated): " input_services
+          IFS=',' read -ra selected <<< "$input_services"
+          for service in "${selected[@]}"; do
+            service=$(echo "$service" | tr -d ' ')
+            push_docker_image "$service" "$tag" || log_warning "Failed to push $service"
+          done
+        fi
+      fi
+      ;;
+    15)
+      log_info "Installing tools..."
+      read -p "Install Docker (d), Minikube (m), Helm (h), Trivy (t), or All (a)? [a]: " tool_choice
+      tool_choice=${tool_choice:-a}
+      case $tool_choice in
+        d) install_docker ;;
+        m) install_minikube ;;
+        h) install_helm ;;
+        t) install_trivy ;;
+        a)
+          install_docker || log_warning "Docker installation failed or skipped"
+          install_minikube || log_warning "Minikube installation failed or skipped"
+          install_helm || log_warning "Helm installation failed or skipped"
+          read -p "Install Trivy? (y/n): " install_trivy_choice
+          if [ "$install_trivy_choice" = "y" ]; then
+            install_trivy || log_warning "Trivy installation failed or skipped"
+          fi
+          ;;
+        *) log_error "Invalid tool choice" ;;
+      esac
+      ;;
+    16)
       log_info "Exiting..."
       exit 0
       ;;

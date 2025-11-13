@@ -1,0 +1,265 @@
+# Production Values for FKS Trading Platform
+# Override default values for production deployment
+
+global:
+  environment: production
+  domain: fks-trading.com
+  imageRegistry: ghcr.io/nuniesmith  # GitHub Container Registry
+  imagePullPolicy: IfNotPresent
+  storageClass: fast-ssd  # Use SSD storage class in production
+
+# Increase replicas for production
+fks_main:
+  replicaCount: 3
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  autoscaling:
+    minReplicas: 3
+    maxReplicas: 15
+
+fks_api:
+  replicaCount: 5
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  autoscaling:
+    minReplicas: 5
+    maxReplicas: 20
+
+fks_app:
+  replicaCount: 5
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  autoscaling:
+    minReplicas: 5
+    maxReplicas: 20
+
+fks_ai:
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 8000m
+      memory: 16Gi
+      nvidia.com/gpu: 1
+    requests:
+      cpu: 2000m
+      memory: 8Gi
+      nvidia.com/gpu: 1
+  autoscaling:
+    minReplicas: 2
+    maxReplicas: 20
+
+fks_data:
+  replicaCount: 4
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+  autoscaling:
+    minReplicas: 4
+    maxReplicas: 10
+
+fks_execution:
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 8000m
+      memory: 8Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  verticalPodAutoscaler:
+    enabled: false  # VPA CRD not installed
+    updateMode: Auto
+    maxAllowed:
+      cpu: 16000m
+      memory: 16Gi
+
+# Production database configuration
+postgresql:
+  enabled: true
+  auth:
+    username: fks_user
+    database: fks_db
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 200Gi  # Larger storage for production
+      storageClass: fast-ssd
+    
+    resources:
+      limits:
+        cpu: 4000m
+        memory: 8Gi
+      requests:
+        cpu: 1000m
+        memory: 4Gi
+    
+    # Production-grade backups
+    backup:
+      enabled: true
+      schedule: "0 */6 * * *"  # Every 6 hours
+  
+  # Multi-AZ replication
+  replication:
+    enabled: true
+    numSynchronousReplicas: 2
+    synchronousCommit: "remote_apply"
+  
+  # Read replicas for analytics
+  readReplicas:
+    replicaCount: 2
+    persistence:
+      size: 200Gi
+      storageClass: fast-ssd
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+
+# Production Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+  
+  master:
+    persistence:
+      enabled: true
+      size: 32Gi  # Larger cache
+      storageClass: fast-ssd
+    
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 2Gi
+  
+  # Redis Sentinel for HA
+  sentinel:
+    enabled: true
+    quorum: 2
+    replicas: 3
+  
+  # Redis replicas
+  replica:
+    replicaCount: 3
+    persistence:
+      size: 32Gi
+      storageClass: fast-ssd
+
+# Production Ingress with real domain
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "1000"  # Higher rate limit
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://fks-trading.com,https://web.fks-trading.com"
+  
+  hosts:
+    - host: fks-trading.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: fks-main
+          port: 8000
+    
+    - host: api.fks-trading.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: fks-api
+          port: 8001
+    
+    - host: web.fks-trading.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: fks-web
+          port: 3001
+  
+  tls:
+    - secretName: fks-trading-tls
+      hosts:
+        - fks-trading.com
+        - api.fks-trading.com
+        - web.fks-trading.com
+        - "*.fks-trading.com"
+
+# Enhanced monitoring for production
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      size: 100Gi
+      storageClass: fast-ssd
+    retention: 90d  # 3 months retention
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 8Gi
+      requests:
+        cpu: 500m
+        memory: 4Gi
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: fast-ssd
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 250m
+      memory: 1Gi
+
+# Security hardening for production
+networkPolicy:
+  enabled: true
+
+podSecurityPolicy:
+  enabled: false  # PSP deprecated in K8s 1.25+
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+# Production backups
+backup:
+  enabled: true
+  schedule: "0 */4 * * *"  # Every 4 hours
+  retention: 90  # Keep 90 days
+  storage:
+    size: 500Gi
+    storageClass: standard  # Use cheaper storage for backups
+
+# Service mesh for advanced traffic management (optional)
+serviceMesh:
+  enabled: true
+  provider: istio

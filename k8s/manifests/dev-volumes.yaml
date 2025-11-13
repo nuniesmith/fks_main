@@ -1,0 +1,49 @@
+---
+# Development Volumes for Live Code Changes
+# This creates PersistentVolumes and ConfigMaps for mounting source code
+# into containers for live development
+
+# Persistent Volume for source code (shared across services)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fks-source-code-pv
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  hostPath:
+    path: /mnt/c/Users/jordan/Nextcloud/code/repos/fks/repo
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fks-source-code-pvc
+  namespace: fks-trading
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: local-storage
+---
+# ConfigMap for development environment variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fks-dev-config
+  namespace: fks-trading
+data:
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  DEVELOPMENT: "true"
+  LIVE_RELOAD: "true"
+  # Add service-specific dev configs here
+  API_DEV_MODE: "true"
+  WEB_DEV_MODE: "true"
+

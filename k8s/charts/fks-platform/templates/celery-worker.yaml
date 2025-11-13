@@ -1,0 +1,37 @@
+{{- if and .Values.celery (index .Values.celery "enabled") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: celery-worker
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.celery.replicaCount }}
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: celery-worker
+        image: nuniesmith/fks:main-latest
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["celery"]
+        args:
+          - "-A"
+          - "services.main.celery_app"
+          - "worker"
+          - "--loglevel=info"
+          - "--concurrency={{ .Values.celery.concurrency }}"
+        envFrom:
+        - configMapRef:
+            name: fks-platform-config
+        resources:
+          {{- toYaml .Values.celery.resources | nindent 10 }}
+{{- end }}

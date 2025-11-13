@@ -1,0 +1,60 @@
+# API Gateway Configuration for FKS Services
+# Routes all external traffic through a single entry point
+
+routes:
+
+  - name: fks_api
+    path: /api/api
+    service: fks_api
+    port: 8001
+    health_check:
+      path: /health
+      interval: 30s
+
+  - name: fks_app
+    path: /api/app
+    service: fks_app
+    port: 8002
+    health_check:
+      path: /health
+      interval: 30s
+
+  - name: fks_data
+    path: /api/data
+    service: fks_data
+    port: 8003
+    health_check:
+      path: /health
+      interval: 30s
+
+  - name: fks_execution
+    path: /api/execution
+    service: fks_execution
+    port: 8006
+    health_check:
+      path: /health
+      interval: 30s
+
+  - name: fks_ai
+    path: /api/ai
+    service: fks_ai
+    port: 8007
+    health_check:
+      path: /health
+      interval: 30s
+
+  - name: fks_analyze
+    path: /api/analyze
+    service: fks_analyze
+    port: 8008
+    health_check:
+      path: /health
+      interval: 30s
+
+  - name: fks_monitor
+    path: /api/monitor
+    service: fks_monitor
+    port: 8009
+    health_check:
+      path: /health
+      interval: 30s

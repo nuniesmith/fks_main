@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  namespace: fks-trading
+  labels:
+    app: celery-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      containers:
+      - name: celery-worker
+        image: nuniesmith/fks:main-latest
+        imagePullPolicy: IfNotPresent
+        command: ["celery"]
+        args:
+          - "-A"
+          - "services.web.src.django.celery"
+          - "worker"
+          - "--loglevel=info"
+          - "--concurrency=4"
+        envFrom:
+        - configMapRef:
+            name: fks-platform-config
+        env:
+        - name: CELERY_BROKER_URL
+          value: "redis://fks-platform-redis-master:6379/0"
+        - name: CELERY_RESULT_BACKEND
+          value: "redis://fks-platform-redis-master:6379/0"
+        - name: DATABASE_URL
+          value: "postgresql://fks_user:dev_password_change_me@fks-platform-postgresql:5432/fks_db"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi

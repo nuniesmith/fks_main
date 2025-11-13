@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: replicaset-cleanup-daily
+  namespace: fks-trading
+  labels:
+    app: replicaset-cleanup
+spec:
+  # Run daily at 3 AM
+  schedule: "0 3 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: replicaset-cleanup
+        spec:
+          serviceAccountName: replicaset-cleanup
+          restartPolicy: OnFailure
+          containers:
+          - name: cleanup
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Install jq if not available
+              if ! command -v jq &> /dev/null; then
+                apk add --no-cache jq 2>/dev/null || \
+                apt-get update && apt-get install -y jq 2>/dev/null || \
+                yum install -y jq 2>/dev/null || \
+                echo "Warning: jq not available"
+              fi
+              
+              # Load and run cleanup script
+              SCRIPT=$(kubectl get configmap replicaset-cleanup-script -n fks-trading -o jsonpath='{.data.cleanup\.sh}')
+              echo "$SCRIPT" > /tmp/cleanup.sh
+              chmod +x /tmp/cleanup.sh
+              /tmp/cleanup.sh
+            env:
+            - name: NAMESPACE
+              value: "fks-trading"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+

@@ -1,0 +1,44 @@
+---
+# Signals Volume Configuration
+# This creates a PersistentVolume and PersistentVolumeClaim for the signals directory
+# Used by the portfolio service to read trading signals
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: signals-pv
+  namespace: fks-trading
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  hostPath:
+    path: /home/jordan/Nextcloud/code/repos/fks/signals
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: signals-pvc
+  namespace: fks-trading
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-storage
+---
+# Alternative: ConfigMap for signals directory path (if using hostPath directly)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: signals-config
+  namespace: fks-trading
+data:
+  SIGNALS_DIR: "/app/signals"
+  SIGNALS_HOST_PATH: "/home/jordan/Nextcloud/code/repos/fks/signals"
+

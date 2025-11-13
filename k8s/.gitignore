@@ -1,0 +1,33 @@
+# Kubernetes secrets and sensitive files
+dashboard-token.txt
+*.token
+*.key
+*.crt
+secrets.yaml
+*-secrets.yaml
+*.pem
+
+# Local environment files
+.env
+.env.local
+*.local
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.code-workspace
+
+# Backup files
+*.bak
+*.backup
+

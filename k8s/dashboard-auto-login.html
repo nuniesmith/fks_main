@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Dashboard - Auto Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .button {
+            background: #1976d2;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #1565c0;
+        }
+        .token-display {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Kubernetes Dashboard - Auto Login</h1>
+        
+        <div class="info">
+            <p><strong>Instructions:</strong></p>
+            <ol>
+                <li>Make sure kubectl proxy is running: <code>kubectl proxy</code></li>
+                <li>Click the "Open Dashboard" button below</li>
+                <li>The token will be automatically filled in (or copy from below)</li>
+            </ol>
+        </div>
+        
+        <div>
+            <button class="button" onclick="openDashboard()">Open Dashboard</button>
+            <button class="button" onclick="copyToken()">Copy Token</button>
+            <button class="button" onclick="startProxy()">Start kubectl Proxy</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div>
+            <h3>Dashboard Token:</h3>
+            <div class="token-display" id="token-display">Loading token...</div>
+        </div>
+        
+        <div>
+            <h3>Dashboard URL:</h3>
+            <div class="token-display">http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/</div>
+        </div>
+    </div>
+    
+    <script>
+        // Token will be loaded from the server or file
+        // For security, this should be loaded server-side or from a local file
+        const DASHBOARD_URL = 'http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/';
+        
+        // Load token from token file (this would need to be served by a local server)
+        // For now, we'll use localStorage or prompt user
+        let dashboardToken = '';
+        
+        // Try to load token from localStorage
+        function loadToken() {
+            const savedToken = localStorage.getItem('k8s-dashboard-token');
+            if (savedToken) {
+                dashboardToken = savedToken;
+                document.getElementById('token-display').textContent = savedToken.substring(0, 50) + '...';
+                return true;
+            }
+            return false;
+        }
+        
+        // Save token to localStorage
+        function saveToken(token) {
+            localStorage.setItem('k8s-dashboard-token', token);
+            dashboardToken = token;
+            document.getElementById('token-display').textContent = token.substring(0, 50) + '...';
+            showStatus('Token saved to browser storage', 'success');
+        }
+        
+        // Open dashboard in new window with auto-login
+        function openDashboard() {
+            if (!dashboardToken) {
+                showStatus('Token not found. Please copy token manually or load it first.', 'error');
+                return;
+            }
+            
+            // Open dashboard
+            const dashboardWindow = window.open(DASHBOARD_URL, '_blank');
+            
+            // Wait for page to load, then inject token
+            setTimeout(() => {
+                try {
+                    // Create a script to inject into the dashboard page
+                    // Note: This won't work due to CORS, so we'll use a different approach
+                    showStatus('Dashboard opened. Please paste the token manually (it\'s copied to clipboard).', 'success');
+                    copyToken();
+                } catch (e) {
+                    console.error('Error:', e);
+                    showStatus('Could not auto-fill token. Please paste manually.', 'error');
+                }
+            }, 2000);
+        }
+        
+        // Copy token to clipboard
+        function copyToken() {
+            if (!dashboardToken) {
+                // Try to read from token file via fetch (if served locally)
+                fetchTokenFromFile().then(token => {
+                    if (token) {
+                        navigator.clipboard.writeText(token).then(() => {
+                            showStatus('Token copied to clipboard!', 'success');
+                        });
+                    } else {
+                        showStatus('Token not found. Please load token first.', 'error');
+                    }
+                });
+                return;
+            }
+            
+            navigator.clipboard.writeText(dashboardToken).then(() => {
+                showStatus('Token copied to clipboard!', 'success');
+            }).catch(err => {
+                showStatus('Failed to copy token: ' + err, 'error');
+            });
+        }
+        
+        // Fetch token from local file (requires local server)
+        async function fetchTokenFromFile() {
+            try {
+                const response = await fetch('/k8s/dashboard-token.txt');
+                if (response.ok) {
+                    const text = await response.text();
+                    const match = text.match(/Token:\s*(.+)/);
+                    if (match) {
+                        const token = match[1].trim();
+                        saveToken(token);
+                        return token;
+                    }
+                }
+            } catch (e) {
+                console.error('Could not fetch token file:', e);
+            }
+            return null;
+        }
+        
+        // Start kubectl proxy (requires backend service)
+        function startProxy() {
+            showStatus('Starting kubectl proxy... (this requires a backend service)', 'info');
+            // This would need a backend service to execute kubectl commands
+            // For local use, user should run: kubectl proxy
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status ' + type;
+            statusDiv.textContent = message;
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 5000);
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            // Try to load token from localStorage
+            if (!loadToken()) {
+                // Try to fetch from file
+                fetchTokenFromFile();
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,133 @@
+---
+# Nginx Service (Standalone Reverse Proxy)
+# This is an alternative to using the nginx ingress controller
+# Use this if you want more control over nginx configuration
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: fks-trading
+  labels:
+    app: nginx
+    service: reverse-proxy
+spec:
+  type: LoadBalancer  # Change to ClusterIP if using ingress controller in front
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 443
+    protocol: TCP
+  selector:
+    app: nginx
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: fks-trading
+  labels:
+    app: nginx
+    service: reverse-proxy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+        service: reverse-proxy
+    spec:
+      containers:
+      - name: nginx
+        image: nuniesmith/fks:nginx-latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        volumeMounts:
+        # SSL certificates
+        - name: ssl-certs
+          mountPath: /etc/nginx/ssl
+          readOnly: true
+        # Static files from web service
+        - name: staticfiles
+          mountPath: /app/staticfiles
+          readOnly: true
+        # Media files from web service
+        - name: media
+          mountPath: /app/media
+          readOnly: true
+        # Logs
+        - name: nginx-logs
+          mountPath: /var/log/nginx
+        env:
+        - name: TZ
+          value: "UTC"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      # SSL certificates (can use ConfigMap/Secret or PersistentVolume)
+      - name: ssl-certs
+        secret:
+          secretName: nginx-ssl-certs
+          optional: true
+      # Static files from web service (shared volume)
+      - name: staticfiles
+        persistentVolumeClaim:
+          claimName: web-staticfiles
+          optional: true
+      # Media files from web service (shared volume)
+      - name: media
+        persistentVolumeClaim:
+          claimName: web-media
+          optional: true
+      # Logs (emptyDir or PersistentVolume)
+      - name: nginx-logs
+        emptyDir: {}
+
+---
+# ConfigMap for nginx configuration (optional - can be baked into image)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: fks-trading
+data:
+  nginx.conf: |
+    # Main nginx config can be stored here
+    # Or keep it in the Docker image
+  fkstrading.xyz.conf: |
+    # Site-specific config can be stored here
+    # Or keep it in the Docker image
+

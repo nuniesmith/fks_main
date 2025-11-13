@@ -1,0 +1,30 @@
+{{- range $service := list "fks_main" "fks_api" "fks_app" "fks_ai" "fks_data" "fks_execution" "fks_ninja" "fks_web" "fks_auth" "fks_portfolio" "fks_monitor" "fks_meta" "fks_analyze" "fks_training" }}
+{{- $config := index $.Values $service }}
+{{- if $config.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $config.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: {{ $config.name }}
+    component: {{ $service }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ $config.service.port | quote }}
+spec:
+  type: {{ $config.service.type }}
+  ports:
+  - port: {{ $config.service.port }}
+    targetPort: {{ $config.service.targetPort }}
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ $config.name }}
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+{{- end }}
+{{- end }}

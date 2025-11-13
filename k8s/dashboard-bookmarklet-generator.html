@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Dashboard - Bookmarklet Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .button {
+            background: #1976d2;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #1565c0;
+        }
+        .success {
+            background: #c8e6c9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Kubernetes Dashboard - Bookmarklet Generator</h1>
+        
+        <div class="info">
+            <p><strong>Instructions:</strong></p>
+            <ol>
+                <li>Paste your dashboard token in the textarea below</li>
+                <li>Click "Generate Bookmarklet"</li>
+                <li>Copy the generated bookmarklet URL</li>
+                <li>Create a bookmark in your browser with the bookmarklet URL</li>
+                <li>When on the dashboard login page, click the bookmark to auto-fill token</li>
+            </ol>
+        </div>
+        
+        <div>
+            <label for="token-input"><strong>Dashboard Token:</strong></label>
+            <textarea id="token-input" placeholder="Paste your dashboard token here..."></textarea>
+        </div>
+        
+        <div>
+            <button class="button" onclick="generateBookmarklet()">Generate Bookmarklet</button>
+            <button class="button" onclick="loadTokenFromFile()">Load Token from File</button>
+        </div>
+        
+        <div id="result"></div>
+        
+        <div>
+            <label for="bookmarklet-url"><strong>Bookmarklet URL:</strong></label>
+            <textarea id="bookmarklet-url" placeholder="Bookmarklet URL will appear here..." readonly></textarea>
+        </div>
+        
+        <div class="info">
+            <p><strong>How to Use:</strong></p>
+            <ol>
+                <li>Copy the bookmarklet URL above</li>
+                <li>Create a bookmark in your browser (Ctrl+D / Cmd+D)</li>
+                <li>Edit the bookmark and paste the bookmarklet URL as the URL</li>
+                <li>Name it "K8s Dashboard Auto-Login"</li>
+                <li>When on the dashboard login page, click the bookmark</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        function generateBookmarklet() {
+            const token = document.getElementById('token-input').value.trim();
+            
+            if (!token) {
+                alert('Please enter a token first');
+                return;
+            }
+            
+            // Escape token for JavaScript
+            const tokenEscaped = token.replace(/'/g, "\\'").replace(/"/g, '\\"');
+            
+            // Create bookmarklet code
+            const bookmarkletCode = `(function(){const TOKEN='${tokenEscaped}';const tokenInput=document.querySelector('input[type="text"][placeholder*="token" i],input[type="text"][name*="token" i],input[type="password"],input[type="text"]');if(tokenInput){tokenInput.value=TOKEN;tokenInput.type='text';['input','change','keyup'].forEach(eventType=>{const event=new Event(eventType,{bubbles:true});tokenInput.dispatchEvent(event);});tokenInput.focus();setTimeout(()=>{const selectors=['button[type="submit"]','button:contains("Sign")','button:contains("Login")','md-button[type="submit"]','.mat-button[type="submit"]','button.mat-primary'];let loginButton=null;for(const selector of selectors){loginButton=document.querySelector(selector);if(loginButton)break;}if(loginButton){loginButton.click();console.log('Auto-login successful!');}else{const buttons=document.querySelectorAll('button,md-button,.mat-button');for(const btn of buttons){if(btn.textContent&&(btn.textContent.includes('Sign')||btn.textContent.includes('Login'))){btn.click();console.log('Auto-login successful!');return;}}alert('Token filled! Please click the Sign In button manually.');}},500);}else{alert('Token input field not found. Token copied to clipboard.');if(navigator.clipboard){navigator.clipboard.writeText(TOKEN);}else{prompt('Copy this token:',TOKEN);}}})();`;
+            
+            // Create bookmarklet URL
+            const bookmarkletUrl = 'javascript:' + bookmarkletCode;
+            
+            // Display result
+            document.getElementById('bookmarklet-url').value = bookmarkletUrl;
+            document.getElementById('result').innerHTML = '<div class="success">✅ Bookmarklet generated successfully! Copy the URL above and create a bookmark.</div>';
+        }
+        
+        function loadTokenFromFile() {
+            // This would require a file input or server-side file reading
+            // For now, prompt user to paste token
+            alert('Please paste your token from repo/main/k8s/dashboard-token.txt');
+        }
+    </script>
+</body>
+</html>
+
