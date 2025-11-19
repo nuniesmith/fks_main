@@ -1,92 +1,97 @@
 #!/bin/bash
-# run.sh - Refactored Unified Management Script for FKS Microservices
-# Version: 2.1 (Refactored & Organized - Nov 18, 2025)
-# Handles 16 services across repos; integrates with Rust fks_main via CLI args
-# Features: Strict error handling, parallel ops, Helm K8s, Trivy scans
-# Usage: ./run.sh [OPTIONS] or interactive menu
-# For Rust integration: Use std::process::Command to call CLI args from fks_main,
-# controllable via fks_web (e.g., Command::new("run.sh").arg("-b").arg("ai").output())
-
-# ============================================================================
-# STRICT ERROR HANDLING
-# ============================================================================
-# Use strict mode globally, with selective overrides in loops for batch operations
-set -euo pipefail  # Exit on error, unset vars, pipe failures
-
-# ============================================================================
-# CONFIGURATION SECTION
+# run.sh - Unified Management Script for FKS Trading Platform
+# Version: 2.2 (Fully Categorized - Nov 19, 2025)
+# Domain: fkstrading.xyz
+# Handles 14 services + shared repos with clear responsibility boundaries
 # ============================================================================
 
-# Script paths and directories
+set -euo pipefail
+IFS=$'\n\t'
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
 PROJECT_ROOT="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 REPO_DIR="$(cd "$PROJECT_ROOT/.." && pwd)"
+DOMAIN="fkstrading.xyz"
 
-# Docker configuration (use environment variables for flexibility)
 DOCKER_USERNAME="${DOCKER_USERNAME:-nuniesmith}"
 DOCKER_REPO="${DOCKER_REPO:-fks}"
 DEFAULT_TAG="${DEFAULT_TAG:-latest}"
 
-# Feature flags (environment variable overrides)
-ENABLE_TRIVY="${ENABLE_TRIVY:-true}"           # Enable Trivy scanning by default
-ENABLE_PARALLEL="${ENABLE_PARALLEL:-true}"     # Enable parallel processing
-MAX_PARALLEL="${MAX_PARALLEL:-4}"              # Limit concurrent jobs (4-8 recommended)
-PULL_MISSING_IMAGES="${PULL_MISSING_IMAGES:-n}" # Default to local builds (n=no pull, y=pull from Docker Hub)
-PULL_BASE_IMAGES="${PULL_BASE_IMAGES:-false}"   # Default to building base images locally
+ENABLE_TRIVY="${ENABLE_TRIVY:-true}"
+ENABLE_PARALLEL="${ENABLE_PARALLEL:-true}"
+MAX_PARALLEL="${MAX_PARALLEL:-4}"
+PULL_MISSING_IMAGES="${PULL_MISSING_IMAGES:-n}"
+PULL_BASE_IMAGES="${PULL_BASE_IMAGES:-false}"
 
-# Service definitions (organized: core/infra/shared)
-# Core business logic services (frequently updated, built & pushed)
+# ============================================================================
+# SERVICE CATEGORIZATION (matches FKS AI Context Guide exactly)
+# ============================================================================
+
+# Core business logic (frequently changed, Python-heavy)
 CORE_SERVICES=(
-  "ai" "training" "api" "app" "data" "execution" "portfolio" "web"
+  ai          # AI/ML inference (GPU)
+  training    # GPU batch training
+  api         # API Gateway (FastAPI)
+  app         # Trading logic & signals
+  data        # Central data service (single source of truth)
+  execution   # Order execution engine (Rust)
+  portfolio   # BTC-centric portfolio optimization
+  web         # Django web UI
 )
 
-EXECUTION_PLUGIN_SERVICES=(
-  "meta" "ninja"
+# Execution plugins (attached to fks_execution)
+EXECUTION_PLUGINS=(
+  meta        # MetaTrader 5 bridge
+  ninja       # NinjaTrader 8 bridge
 )
 
-# Infrastructure services
+# Infrastructure & operations services
 INFRA_SERVICES=(
-  "analyze" "auth" "nginx" "monitor" "tailscale"
+  analyze     # Codebase analysis & auto-improvement
+  auth        # Rust-based auth (JWT/RBAC) – used by nginx + web
+  nginx       # Reverse proxy, TLS, auth integration
+  monitor     # Prometheus + Grafana metrics aggregation
+  tailscale   # Zero-config VPN (Tailscale container)
 )
 
-# Pure shared/read-only repositories (never built as images)
+# Main orchestrator (special – Rust + Kubernetes control)
+ORCHESTRATOR=(
+  main        # fks_main – Rust orchestrator (controls everything)
+)
+
+# Pure shared / read-only repos (never built as images)
 SHARED_REPOS=(
-  "actions" "dev" "docker" "config" "docs" "scripts"
+  actions     # GitHub Actions workflows
+  dev         # Dev tools / fks_dev repo
+  docker      # Base Dockerfiles + per-service overrides
+  config      # Helm charts, env files, shared YAMLs
+  docs        # Documentation
+  scripts     # Shared scripts
 )
 
-# All services that produce Docker images
-ALL_SERVICES=("${CORE_SERVICES[@]}" "${EXECUTION_PLUGIN_SERVICES[@]}" "${INFRA_SERVICES[@]}")
-
-# All repositories (services + shared)
+# Composite arrays
+ALL_SERVICES=("${CORE_SERVICES[@]}" "${EXECUTION_PLUGINS[@]}" "${INFRA_SERVICES[@]}" "${ORCHESTRATOR[@]}")
 ALL_REPOS=("${ALL_SERVICES[@]}" "${SHARED_REPOS[@]}")
 
-# Python & Rust subsets for targeted operations
-PYTHON_SERVICES=("ai" "analyze" "api" "app" "data" "meta" "monitor" "ninja" "portfolio" "training" "web")
-RUST_SERVICES=("auth" "execution" "main")
+# Language-specific
+PYTHON_SERVICES=(ai analyze api app data monitor ninja portfolio training web)
+RUST_SERVICES=(auth execution main)
 
-# Backward-compatible aliases used throughout the script
+# Backward compatibility (old scripts still work)
 SERVICES=("${ALL_SERVICES[@]}")
 REPOS=("${ALL_REPOS[@]}")
 
 # ============================================================================
-# LOGGING HELPERS
+# LOGGING
 # ============================================================================
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
-log_info() { echo -e "${BLUE}[INFO]${NC} $*"; }
-log_success() { echo -e "${GREEN}[SUCCESS]${NC} $*"; }
-log_warning() { echo -e "${YELLOW}[WARNING]${NC} $*"; }
-log_error() { 
-  echo -e "${RED}[ERROR]${NC} $*" >&2
-  # Don't exit in interactive mode - let caller handle
-  return 1
-}
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
+log_info()    { echo -e "${BLUE}[FKS]${NC} $*"; }
+log_success() { echo -e "${GREEN}✓${NC} $*"; }
+log_warning() { echo -e "${YELLOW}!${NC} $*"; }
+log_error()   { echo -e "${RED}✗ $*${NC}" >&2; }
 
 # ============================================================================
 # CLEANUP AND TRAPS
@@ -1688,7 +1693,7 @@ parse_cli_args() {
         log_info "CLI mode: Committing and pushing scope: $scope"
         case "$scope" in
           core)
-            for repo in "${CORE_SERVICES[@]}"; do
+            for repo in "${CPU_SERVICES[@]}"; do
               commit_push "$repo" "chore: auto update $(date +'%Y-%m-%d %H:%M')" "true" || \
                 log_warning "Failed to commit $repo"
             done
@@ -2019,27 +2024,25 @@ sync_and_update_k8s() {
 }
 
 # ============================================================================
-# INTERACTIVE MENU (Reorganized logically)
+# INTERACTIVE MENU (updated with real categories)
 # ============================================================================
-
 show_menu() {
-  echo -e "${CYAN}=== FKS Microservices Manager ===${NC}"
-  echo "1. Install Tools (Docker, Minikube, Helm, Trivy)"
-  echo "2. Build Base Images"
-  echo "3. Build Service Images"
-  echo "4. Start Services (Docker Compose)"
-  echo "5. Stop Services"
-  echo "6. Deploy to Kubernetes"
-  echo "7. Manage Venvs (Python services)"
-  echo "8. Commit & Push (All repos or services only)"
-  echo "9. Analyze Codebase"
-  echo "10. Check GitHub Actions Status"
-  echo "11. Sync/Pull Images"
-  echo "12. Exit"
-  echo ""
-  echo -e "${YELLOW}Note:${NC} Services: ${#SERVICES[@]} (Core: ${#CORE_SERVICES[@]}, Infra: ${#INFRA_SERVICES[@]}); Shared repos: ${#SHARED_REPOS[@]}"
-  echo ""
-  read -p "Enter choice: " choice
+  echo -e "${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${CYAN}║          FKS Trading Platform • fkstrading.xyz           ║${NC}"
+  echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
+  echo
+  echo "Core Services     : ${#CORE_SERVICES[@]}   (ai, app, data, portfolio, web…)"
+  echo "Execution Plugins : ${#EXECUTION_PLUGINS[@]}   (meta, ninja)"
+  echo "Infra Services    : ${#INFRA_SERVICES[@]}   (analyze, auth, nginx, monitor, tailscale)"
+  echo "Orchestrator      : ${#ORCHESTRATOR[@]}   (main – Rust)"
+  echo "Shared Repos      : ${#SHARED_REPOS[@]}   (docker, config, docs…)"
+  echo
+  echo "1. Install Tools            2. Build Base Images       3. Build All Services"
+  echo "4. Start Services           5. Stop Services           6. Deploy to Kubernetes"
+  echo "7. Manage Python Venvs      8. Commit & Push           9. Analyze Codebase"
+  echo "10. Check GitHub Actions   11. Sync/Pull Images       12. Exit"
+  echo
+  read -p "Choose option: " choice
 }
 
 # ============================================================================
@@ -2131,25 +2134,17 @@ main() {
         fi
         ;;
       8)
-        read -p "Commit [c]ore services, [s]ervices (all), or [r]epos (all)? [s]: " repo_mode
-        repo_mode=${repo_mode:-s}
-        read -p "Enter commit message (default: chore: auto update): " message
-        message=${message:-"chore: auto update"}
-        case "$repo_mode" in
-          c|C)
-            for service in "${CORE_SERVICES[@]}"; do
-              commit_push "$service" "$message" "false" || log_warning "Failed to commit $service"
-            done
-            ;;
-          r|R)
-            for repo in "${REPOS[@]}"; do
-              commit_push "$repo" "$message" "false" || log_warning "Failed to commit $repo"
-            done
-            ;;
-          *)
-            for service in "${SERVICES[@]}"; do
-              commit_push "$service" "$message" "false" || log_warning "Failed to commit $service"
-            done
+        echo "Commit scope: [c]ore, [i]nfra+main, [a]ll services, [r]epos everything"
+        read -p "Choice [a]: " scope
+        scope=${scope:-a}
+        read -p "Message [chore: update]: " msg
+        msg=${msg:-"chore: update $(date +'%Y-%m-%d')"}
+        case $scope in
+          c) for s in "${CORE_SERVICES[@]}"; do commit_push "$s" "$msg" "false" || log_warning "Failed: $s"; done ;;
+          i) for s in "${INFRA_SERVICES[@]}" "${ORCHESTRATOR[@]}"; do commit_push "$s" "$msg" "false" || log_warning "Failed: $s"; done ;;
+          a) for s in "${ALL_SERVICES[@]}"; do commit_push "$s" "$msg" "false" || log_warning "Failed: $s"; done ;;
+          r) for s in "${ALL_REPOS[@]}"; do commit_push "$s" "$msg" "false" || log_warning "Failed: $s"; done ;;
+        esac
             ;;
         esac
         ;;
