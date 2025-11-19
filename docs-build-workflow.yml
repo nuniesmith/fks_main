@@ -1,0 +1,88 @@
+name: Build and Deploy Documentation (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      python_version:
+        description: "Python version to use"
+        required: false
+        default: "3.12"
+        type: string
+      mkdocs_config:
+        description: "Path to MkDocs config file"
+        required: false
+        default: "mkdocs.yml"
+        type: string
+      deploy_to_pages:
+        description: "Deploy to GitHub Pages"
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      - name: Install dependencies
+        run: |
+          pip install mkdocs mkdocs-material pymdown-extensions
+
+      - name: Detect and prepare docs directory
+        run: |
+          # Extract docs_dir from mkdocs.yml (default to 'docs' if not set)
+          DOCS_DIR=$(grep -E '^\s*docs_dir:\s*' ${{ inputs.mkdocs_config }} | awk '{print $2}' | tr -d '"' || echo "docs")
+          echo "DOCS_DIR=$DOCS_DIR" >> $GITHUB_ENV
+
+          # If docs_dir doesn't exist, create it and copy markdown files
+          if [ ! -d "$DOCS_DIR" ]; then
+            echo "Creating docs directory: $DOCS_DIR"
+            mkdir -p "$DOCS_DIR"
+            
+            # Copy all markdown files from root to docs_dir (excluding common non-doc locations)
+            find . -maxdepth 1 -name "*.md" \
+              ! -name "CHANGELOG.md" \
+              ! -name "CONTRIBUTING.md" \
+              -exec cp {} "$DOCS_DIR/" \;
+            
+            # Copy any nested markdown if present
+            if [ -d "content" ]; then
+              cp -r content/* "$DOCS_DIR/" 2>/dev/null || true
+            fi
+            
+            echo "Prepared docs directory with markdown files"
+          fi
+
+      - name: Build MkDocs site
+        run: mkdocs build --config-file ${{ inputs.mkdocs_config }}
+
+      - name: Setup Pages
+        if: inputs.deploy_to_pages
+        uses: actions/configure-pages@v4
+        # Note: Pages must be enabled manually in repo settings first
+        # Go to Settings → Pages → Source: GitHub Actions
+
+      - name: Upload artifact
+        if: inputs.deploy_to_pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    if: inputs.deploy_to_pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

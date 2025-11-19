@@ -30,7 +30,7 @@ struct AppState {
     k8s_client: Option<Client>,
     monitor_client: MonitorClient,
     service_registry: Arc<RwLock<HashMap<String, ServiceInfo>>>,
-    runsh_executor: Arc<RunShExecutor>,
+    runsh_executor: Option<Arc<RunShExecutor>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -148,16 +148,15 @@ async fn main() -> anyhow::Result<()> {
         Ok(executor) => {
             let _ = std::io::stderr().write_all(b"run.sh executor initialized\n");
             let _ = std::io::stderr().flush();
-            Arc::new(executor)
+            Some(Arc::new(executor))
         }
         Err(e) => {
             let msg = format!("WARNING: Failed to initialize run.sh executor: {}. Some features may not work.\n", e);
             let _ = std::io::stderr().write_all(msg.as_bytes());
             let _ = std::io::stderr().flush();
             warn!("Failed to initialize run.sh executor: {}. Some features may not work.", e);
-            // Create a dummy executor that will fail gracefully
-            // We'll handle this in the endpoints
-            return Err(anyhow::anyhow!("run.sh executor initialization failed: {}", e));
+            // Continue without run.sh executor - some endpoints will return errors
+            None
         }
     };
 
@@ -385,7 +384,13 @@ async fn list_deployments(State(state): State<AppState>) -> Json<serde_json::Val
 }
 
 async fn list_runsh_commands(State(state): State<AppState>) -> Json<serde_json::Value> {
-    let commands = state.runsh_executor.get_allowed_commands();
+    let commands = match &state.runsh_executor {
+        Some(executor) => executor.get_allowed_commands(),
+        None => return Json(serde_json::json!({
+            "error": "run.sh executor not available",
+            "commands": []
+        })),
+    };
     let command_descriptions = vec![
         ("1", "Install Tools (Docker, Minikube, Helm, Trivy)"),
         ("2", "Build Base Images"),
@@ -453,7 +458,14 @@ async fn execute_runsh_command(
         timeout_seconds,
     };
 
-    match state.runsh_executor.execute(runsh_cmd).await {
+    let executor = match &state.runsh_executor {
+        Some(e) => e,
+        None => {
+            return Err(StatusCode::SERVICE_UNAVAILABLE);
+        }
+    };
+
+    match executor.execute(runsh_cmd).await {
         Ok(response) => {
             let result = serde_json::json!({
                 "success": response.success,

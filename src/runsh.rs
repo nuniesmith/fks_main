@@ -131,7 +131,7 @@ EOF' 2>&1"#,
         let duration_ms = start_time.elapsed().as_millis() as u64;
 
         match output {
-            Ok(Ok(output_result)) => {
+            Ok(Ok(Ok(output_result))) => {
                 let stdout = String::from_utf8_lossy(&output_result.stdout).to_string();
                 let stderr = String::from_utf8_lossy(&output_result.stderr).to_string();
                 let exit_code = output_result.status.code();
@@ -153,9 +153,13 @@ EOF' 2>&1"#,
                     duration_ms,
                 })
             }
-            Ok(Err(e)) => {
+            Ok(Ok(Err(e))) => {
                 error!("Failed to execute run.sh command: {}", e);
                 Err(anyhow::anyhow!("Command execution failed: {}", e))
+            }
+            Ok(Err(e)) => {
+                error!("Task join error: {}", e);
+                Err(anyhow::anyhow!("Task panicked: {}", e))
             }
             Err(_) => {
                 error!("run.sh command timed out after {} seconds", timeout_duration);
