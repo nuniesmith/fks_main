@@ -8,6 +8,7 @@ metadata:
     app: fks-platform
   annotations:
     {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   {{- if .Values.ingress.tls }}

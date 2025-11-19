@@ -1,0 +1,39 @@
+---
+# Fix for NodeRestriction RBAC issue in Minikube
+# This ensures nodes can access pods in the fks-trading namespace
+# Issue: "no relationship found between node 'minikube' and this object"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:node-pod-access
+  labels:
+    rbac.authorization.k8s.io/autoupdate: "true"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/status
+  - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:node-pod-access
+  labels:
+    rbac.authorization.k8s.io/autoupdate: "true"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:node-pod-access
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:nodes
+

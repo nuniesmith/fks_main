@@ -13,14 +13,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
-use tracing::{info, error};
+use tracing::{info, error, warn};
 
 mod config;
 mod k8s;
 mod monitor;
+mod runsh;
 
 use config::AppConfig;
 use monitor::MonitorClient;
+use runsh::RunShExecutor;
 
 #[derive(Clone)]
 struct AppState {
@@ -28,6 +30,7 @@ struct AppState {
     k8s_client: Option<Client>,
     monitor_client: MonitorClient,
     service_registry: Arc<RwLock<HashMap<String, ServiceInfo>>>,
+    runsh_executor: Arc<RunShExecutor>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -138,6 +141,26 @@ async fn main() -> anyhow::Result<()> {
     let _ = std::io::stderr().write_all(b"Monitor client initialized\n");
     let _ = std::io::stderr().flush();
 
+    // Initialize run.sh executor
+    let _ = std::io::stderr().write_all(b"Initializing run.sh executor...\n");
+    let _ = std::io::stderr().flush();
+    let runsh_executor = match RunShExecutor::new(None) {
+        Ok(executor) => {
+            let _ = std::io::stderr().write_all(b"run.sh executor initialized\n");
+            let _ = std::io::stderr().flush();
+            Arc::new(executor)
+        }
+        Err(e) => {
+            let msg = format!("WARNING: Failed to initialize run.sh executor: {}. Some features may not work.\n", e);
+            let _ = std::io::stderr().write_all(msg.as_bytes());
+            let _ = std::io::stderr().flush();
+            warn!("Failed to initialize run.sh executor: {}. Some features may not work.", e);
+            // Create a dummy executor that will fail gracefully
+            // We'll handle this in the endpoints
+            return Err(anyhow::anyhow!("run.sh executor initialization failed: {}", e));
+        }
+    };
+
     // Initialize app state
     let _ = std::io::stderr().write_all(b"Creating app state...\n");
     let _ = std::io::stderr().flush();
@@ -146,6 +169,7 @@ async fn main() -> anyhow::Result<()> {
         k8s_client,
         monitor_client,
         service_registry: Arc::new(RwLock::new(HashMap::new())),
+        runsh_executor,
     };
     let _ = std::io::stderr().write_all(b"App state created\n");
     let _ = std::io::stderr().flush();
@@ -165,6 +189,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/v1/summary", get(get_summary))
         .route("/api/v1/k8s/pods", get(list_pods))
         .route("/api/v1/k8s/deployments", get(list_deployments))
+        .route("/api/v1/runsh/commands", get(list_runsh_commands))
+        .route("/api/v1/runsh/execute", post(execute_runsh_command))
         .layer(CorsLayer::permissive())
         .with_state(app_state);
     let _ = std::io::stderr().write_all(b"Router built\n");
@@ -356,5 +382,97 @@ async fn list_deployments(State(state): State<AppState>) -> Json<serde_json::Val
         "deployments": [],
         "message": "K8s integration coming soon"
     }))
+}
+
+async fn list_runsh_commands(State(state): State<AppState>) -> Json<serde_json::Value> {
+    let commands = state.runsh_executor.get_allowed_commands();
+    let command_descriptions = vec![
+        ("1", "Install Tools (Docker, Minikube, Helm, Trivy)"),
+        ("2", "Build Base Images"),
+        ("3", "Build Service Images"),
+        ("4", "Start Services (Docker Compose)"),
+        ("5", "Stop Services"),
+        ("6", "Deploy to Kubernetes"),
+        ("7", "Manage Venvs (Python services)"),
+        ("8", "Commit & Push (All repos or services only)"),
+        ("9", "Analyze Codebase"),
+        ("10", "Check GitHub Actions Status"),
+        ("11", "Sync/Pull Images"),
+    ];
+
+    let commands_list: Vec<serde_json::Value> = commands
+        .iter()
+        .filter_map(|cmd| {
+            command_descriptions
+                .iter()
+                .find(|(id, _)| id == cmd)
+                .map(|(id, desc)| {
+                    serde_json::json!({
+                        "id": id,
+                        "description": desc
+                    })
+                })
+        })
+        .collect();
+
+    Json(serde_json::json!({
+        "commands": commands_list,
+        "count": commands_list.len()
+    }))
+}
+
+async fn execute_runsh_command(
+    State(state): State<AppState>,
+    Json(payload): Json<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let command = match payload.get("command").and_then(|v| v.as_str()) {
+        Some(cmd) => cmd.to_string(),
+        None => {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    };
+
+    let args = payload
+        .get("args")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let timeout_seconds = payload
+        .get("timeout_seconds")
+        .and_then(|v| v.as_u64())
+        .or_else(|| Some(300));
+
+    let runsh_cmd = runsh::RunShCommand {
+        command,
+        args,
+        timeout_seconds,
+    };
+
+    match state.runsh_executor.execute(runsh_cmd).await {
+        Ok(response) => {
+            let result = serde_json::json!({
+                "success": response.success,
+                "exit_code": response.exit_code,
+                "stdout": response.stdout,
+                "stderr": response.stderr,
+                "duration_ms": response.duration_ms,
+            });
+
+            if response.success {
+                Ok(Json(result))
+            } else {
+                Ok(Json(result))
+            }
+        }
+        Err(e) => {
+            error!("Failed to execute run.sh command: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
