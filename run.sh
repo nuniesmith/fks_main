@@ -51,7 +51,7 @@ ALL_SERVICES=("${CORE_SERVICES[@]}" "${INFRA_SERVICES[@]}")
 
 # Pure shared/read-only repositories (never built as images)
 SHARED_REPOS=(
-  "docker" "config" "docs" "scripts"
+  "actions" "docker" "config" "docs" "scripts"
 )
 
 # All repositories (services + shared)
