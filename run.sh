@@ -1578,6 +1578,7 @@ OPTIONS:
   -u               Sync images to Minikube
   -v SERVICE       Manage venv for Python service
   -w               Check GitHub Actions workflow status
+  -x [SCOPE]       Clear GitHub Actions caches (SCOPE: all | services | specific repos)
   -h               Show this help message
 
 Environment Variables:
@@ -1626,7 +1627,7 @@ parse_cli_args() {
   # Disable interactive mode for CLI
   INTERACTIVE=false
   
-  while getopts ":i:b:Ba:t:p:Ps:S:c:Ck:uv:wh" opt; do
+  while getopts ":i:b:Ba:t:p:Ps:S:c:Ck:uv:wx:h" opt; do
     case $opt in
       i)
         install_tool="$OPTARG"
@@ -1743,6 +1744,35 @@ parse_cli_args() {
         check_workflows=true
         log_info "CLI mode: Checking GitHub Actions workflow status"
         check_workflow_status
+        ;;
+      x)
+        # Optional scope argument
+        local cache_scope
+        cache_scope="${!OPTIND:-}"
+        if [[ "$cache_scope" =~ ^(all|services)$ ]]; then
+          OPTIND=$((OPTIND + 1))
+        else
+          # Check if OPTARG contains repos (comma-separated)
+          if [[ -n "${OPTARG:-}" ]] && [[ "$OPTARG" != "-"* ]]; then
+            cache_scope="$OPTARG"
+          else
+            cache_scope="all"
+          fi
+        fi
+        log_info "CLI mode: Clearing GitHub Actions caches (scope: $cache_scope)"
+        case "$cache_scope" in
+          services)
+            clear_github_actions_caches "${ALL_SERVICES[@]}"
+            ;;
+          all)
+            clear_github_actions_caches
+            ;;
+          *)
+            # Custom repo list (comma-separated)
+            IFS=',' read -ra custom_repos <<< "$cache_scope"
+            clear_github_actions_caches "${custom_repos[@]}"
+            ;;
+        esac
         ;;
       h)
         show_help
@@ -1945,6 +1975,127 @@ check_workflow_status() {
 }
 
 # ============================================================================
+# GITHUB ACTIONS CACHE MANAGEMENT
+# ============================================================================
+
+clear_github_actions_caches() {
+  local repos_to_clear=("${ALL_REPOS[@]}")
+  if [ $# -gt 0 ]; then
+    repos_to_clear=("$@")
+  fi
+  
+  echo "=========================================="
+  echo "GitHub Actions Cache Cleanup"
+  echo "=========================================="
+  echo ""
+  
+  if ! command -v gh &>/dev/null; then
+    log_error "GitHub CLI (gh) is not installed"
+    echo "Install it with: sudo apt install gh"
+    echo "Or visit: https://cli.github.com/"
+    return 1
+  fi
+  
+  if ! gh auth status &>/dev/null; then
+    log_error "GitHub CLI not authenticated"
+    echo "Run: gh auth login"
+    return 1
+  fi
+  
+  local total_cleared=0
+  local total_size=0
+  
+  for repo in "${repos_to_clear[@]}"; do
+    local repo_dir
+    repo_dir=$(get_repo_path "$repo")
+    
+    echo "----------------------------------------"
+    echo -e "${BLUE}Repository: $repo${NC}"
+    echo "----------------------------------------"
+    
+    if [ ! -d "$repo_dir" ]; then
+      log_warning "Directory not found: $repo_dir"
+      echo ""
+      continue
+    fi
+    
+    cd "$repo_dir" || continue
+    
+    if [ ! -d ".git" ]; then
+      log_warning "Not a git repository"
+      echo ""
+      continue
+    fi
+    
+    local repo_url
+    repo_url=$(git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]\(.*\)\.git/\1/' | \
+      sed 's/.*github.com\///' | sed 's/\.git$//')
+    
+    if [ -z "$repo_url" ]; then
+      log_warning "Could not determine repository URL"
+      echo ""
+      continue
+    fi
+    
+    echo " GitHub: https://github.com/$repo_url"
+    echo ""
+    
+    # List caches
+    local cache_list
+    cache_list=$(gh cache list --repo "$repo_url" 2>&1)
+    
+    if [ $? -ne 0 ]; then
+      log_warning "Could not fetch cache list"
+      echo ""
+      continue
+    fi
+    
+    if [ -z "$cache_list" ] || [[ "$cache_list" == *"no caches"* ]]; then
+      echo " No caches found"
+      echo ""
+      continue
+    fi
+    
+    # Count and show caches
+    local cache_count
+    cache_count=$(echo "$cache_list" | wc -l)
+    echo " Found $cache_count cache(s)"
+    echo ""
+    
+    # Delete all caches
+    local cleared_count=0
+    while IFS=$'\t' read -r id key size created; do
+      if [ -z "$id" ] || [ "$id" = "ID" ]; then
+        continue
+      fi
+      
+      echo -n " Deleting cache $id ($key)... "
+      if gh cache delete "$id" --repo "$repo_url" &>/dev/null; then
+        echo -e "${GREEN}✓${NC}"
+        cleared_count=$((cleared_count + 1))
+        total_cleared=$((total_cleared + 1))
+      else
+        echo -e "${RED}✗${NC}"
+      fi
+    done < <(echo "$cache_list" | tail -n +2)
+    
+    if [ $cleared_count -gt 0 ]; then
+      log_success "Cleared $cleared_count cache(s) from $repo"
+    fi
+    echo ""
+  done
+  
+  cd "$PROJECT_ROOT" || return 1
+  
+  echo "=========================================="
+  echo "Summary"
+  echo "=========================================="
+  log_success "Total caches cleared: $total_cleared across ${#repos_to_clear[@]} repositories"
+  echo ""
+  echo "Note: New caches will be created on next workflow run"
+}
+
+# ============================================================================
 # KUBERNETES DEPLOYMENT MANAGEMENT
 # ============================================================================
 
@@ -2046,7 +2197,8 @@ show_menu() {
   echo "1. Install Tools            2. Build Base Images       3. Build Services"
   echo "4. Start Services           5. Stop Services           6. Deploy to Kubernetes"
   echo "7. Manage Python Venvs      8. Commit & Push           9. Analyze Codebase"
-  echo "10. Check GitHub Actions   11. Sync/Pull Images       12. Exit"
+  echo "10. Check GitHub Actions   11. Sync/Pull Images       12. Clear GH Caches"
+  echo "13. Exit"
   echo
   read -p "Choose option: " choice
 }
@@ -2239,7 +2391,33 @@ main() {
         fi
         ;;
       12)
-        log_info "Exiting..."
+        read -p "Clear caches for: [a]ll repos, [s]ervices only, or [c]ustom? [a]: " mode
+        mode=${mode:-a}
+        case "$mode" in
+          s)
+            log_info "Clearing caches for all services..."
+            clear_github_actions_caches "${ALL_SERVICES[@]}"
+            ;;
+          c)
+            read -p "Enter repo names (comma-separated): " input_repos
+            IFS=',' read -ra selected <<< "$input_repos"
+            local selected_repos=()
+            for repo in "${selected[@]}"; do
+              repo=$(echo "$repo" | tr -d ' ')
+              selected_repos+=("$repo")
+            done
+            if [ ${#selected_repos[@]} -gt 0 ]; then
+              clear_github_actions_caches "${selected_repos[@]}"
+            fi
+            ;;
+          *)
+            log_info "Clearing caches for all repositories..."
+            clear_github_actions_caches
+            ;;
+        esac
+        ;;
+      13)
+        log_success "Goodbye!"
         exit 0
         ;;
       *)
