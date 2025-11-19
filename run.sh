@@ -37,29 +37,32 @@ PULL_BASE_IMAGES="${PULL_BASE_IMAGES:-false}"   # Default to building base image
 # Service definitions (organized: core/infra/shared)
 # Core business logic services (frequently updated, built & pushed)
 CORE_SERVICES=(
-  "ai" "training" "analyze" "api" "app" "auth" "data" "execution" "main"
-  "meta" "monitor" "ninja" "portfolio" "web"
+  "ai" "training" "api" "app" "data" "execution" "portfolio" "web"
 )
 
-# Infrastructure services (Dockerfile-only, rarely change)
+EXECUTION_PLUGIN_SERVICES=(
+  "meta" "ninja"
+)
+
+# Infrastructure services
 INFRA_SERVICES=(
-  "nginx" "tailscale"
+  "analyze" "auth" "nginx" "monitor" "tailscale"
 )
-
-# All services that produce Docker images
-ALL_SERVICES=("${CORE_SERVICES[@]}" "${INFRA_SERVICES[@]}")
 
 # Pure shared/read-only repositories (never built as images)
 SHARED_REPOS=(
-  "actions" "docker" "config" "docs" "scripts"
+  "actions" "dev" "docker" "config" "docs" "scripts"
 )
+
+# All services that produce Docker images
+ALL_SERVICES=("${CORE_SERVICES[@]}" "${EXECUTION_PLUGIN_SERVICES[@]}" "${INFRA_SERVICES[@]}")
 
 # All repositories (services + shared)
 ALL_REPOS=("${ALL_SERVICES[@]}" "${SHARED_REPOS[@]}")
 
 # Python & Rust subsets for targeted operations
-PYTHON_SERVICES=("ai" "analyze" "api" "app" "data" "monitor" "portfolio" "training" "web" "ninja")
-RUST_SERVICES=("auth" "execution" "main" "meta")
+PYTHON_SERVICES=("ai" "analyze" "api" "app" "data" "meta" "monitor" "ninja" "portfolio" "training" "web")
+RUST_SERVICES=("auth" "execution" "main")
 
 # Backward-compatible aliases used throughout the script
 SERVICES=("${ALL_SERVICES[@]}")
