@@ -30,10 +30,14 @@ PULL_BASE_IMAGES="${PULL_BASE_IMAGES:-false}"
 # SERVICE CATEGORIZATION (matches FKS AI Context Guide exactly)
 # ============================================================================
 
-# Core business logic (frequently changed, Python-heavy)
-CORE_SERVICES=(
+# GPU-dependent services (require CUDA/GPU runtime)
+GPU_SERVICES=(
   ai          # AI/ML inference (GPU)
   training    # GPU batch training
+)
+
+# CPU-only core business logic services
+CPU_CORE_SERVICES=(
   api         # API Gateway (FastAPI)
   app         # Trading logic & signals
   data        # Central data service (single source of truth)
@@ -42,13 +46,16 @@ CORE_SERVICES=(
   web         # Django web UI
 )
 
+# Combined core services (backward compat)
+CORE_SERVICES=("${CPU_CORE_SERVICES[@]}" "${GPU_SERVICES[@]}")
+
 # Execution plugins (attached to fks_execution)
 EXECUTION_PLUGINS=(
   meta        # MetaTrader 5 bridge
   ninja       # NinjaTrader 8 bridge
 )
 
-# Infrastructure & operations services
+# Infrastructure & operations services (all CPU)
 INFRA_SERVICES=(
   analyze     # Codebase analysis & auto-improvement
   auth        # Rust-based auth (JWT/RBAC) – used by nginx + web
@@ -73,7 +80,8 @@ SHARED_REPOS=(
 )
 
 # Composite arrays
-ALL_SERVICES=("${CORE_SERVICES[@]}" "${EXECUTION_PLUGINS[@]}" "${INFRA_SERVICES[@]}" "${ORCHESTRATOR[@]}")
+CPU_SERVICES=("${CPU_CORE_SERVICES[@]}" "${EXECUTION_PLUGINS[@]}" "${INFRA_SERVICES[@]}" "${ORCHESTRATOR[@]}")
+ALL_SERVICES=("${CPU_SERVICES[@]}" "${GPU_SERVICES[@]}")
 ALL_REPOS=("${ALL_SERVICES[@]}" "${SHARED_REPOS[@]}")
 
 # Language-specific
@@ -2031,13 +2039,11 @@ show_menu() {
   echo -e "${CYAN}║          FKS Trading Platform • fkstrading.xyz           ║${NC}"
   echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
   echo
-  echo "Core Services     : ${#CORE_SERVICES[@]}   (ai, app, data, portfolio, web…)"
-  echo "Execution Plugins : ${#EXECUTION_PLUGINS[@]}   (meta, ninja)"
-  echo "Infra Services    : ${#INFRA_SERVICES[@]}   (analyze, auth, nginx, monitor, tailscale)"
-  echo "Orchestrator      : ${#ORCHESTRATOR[@]}   (main – Rust)"
-  echo "Shared Repos      : ${#SHARED_REPOS[@]}   (docker, config, docs…)"
+  echo "CPU Services      : ${#CPU_SERVICES[@]}   (api, app, data, execution, portfolio, web, plugins, infra, main)"
+  echo "GPU Services      : ${#GPU_SERVICES[@]}   (ai, training)"
+  echo "Shared Repos      : ${#SHARED_REPOS[@]}   (docker, config, docs, actions)"
   echo
-  echo "1. Install Tools            2. Build Base Images       3. Build All Services"
+  echo "1. Install Tools            2. Build Base Images       3. Build Services"
   echo "4. Start Services           5. Stop Services           6. Deploy to Kubernetes"
   echo "7. Manage Python Venvs      8. Commit & Push           9. Analyze Codebase"
   echo "10. Check GitHub Actions   11. Sync/Pull Images       12. Exit"
@@ -2075,41 +2081,95 @@ main() {
         local tag="$DEFAULT_TAG"
         local push_choice="n"
         if [ "${INTERACTIVE:-true}" = "true" ]; then
+          read -p "Build: [c]pu, [g]pu, or [a]ll services? [c]: " build_mode
+          build_mode=${build_mode:-c}
           read -p "Enter tag (default: latest): " tag
           tag=${tag:-latest}
           read -p "Push to Docker Hub after build? (y/n): " push_choice
         fi
-        build_all_services "$tag" "$([ "$push_choice" = "y" ] && echo "true" || echo "false")"
+        
+        case "${build_mode:-c}" in
+          g)
+            log_info "Building GPU services only..."
+            for service in "${GPU_SERVICES[@]}"; do
+              build_service "$service" "$tag" "$([ "$push_choice" = "y" ] && echo "true" || echo "false")" || log_warning "Failed: $service"
+            done
+            ;;
+          a)
+            log_info "Building all services..."
+            build_all_services "$tag" "$([ "$push_choice" = "y" ] && echo "true" || echo "false")"
+            ;;
+          *)
+            log_info "Building CPU services only..."
+            for service in "${CPU_SERVICES[@]}"; do
+              build_service "$service" "$tag" "$([ "$push_choice" = "y" ] && echo "true" || echo "false")" || log_warning "Failed: $service"
+            done
+            ;;
+        esac
         ;;
       4)
-        read -p "All services (a) or specific (s)? " mode
-        if [ "$mode" = "a" ]; then
-          for service in "${SERVICES[@]}"; do
-            start_service "$service" || log_warning "Failed to start $service"
-          done
-        else
-          read -p "Enter service name (comma-separated): " input_services
-          IFS=',' read -ra selected <<< "$input_services"
-          for service in "${selected[@]}"; do
-            service=$(echo "$service" | tr -d ' ')
-            start_service "$service" || log_warning "Failed to start $service"
-          done
-        fi
+        read -p "Start: [c]pu, [g]pu, [a]ll, or [s]pecific services? [c]: " mode
+        mode=${mode:-c}
+        case "$mode" in
+          g)
+            log_info "Starting GPU services..."
+            for service in "${GPU_SERVICES[@]}"; do
+              start_service "$service" || log_warning "Failed to start $service"
+            done
+            ;;
+          a)
+            log_info "Starting all services..."
+            for service in "${SERVICES[@]}"; do
+              start_service "$service" || log_warning "Failed to start $service"
+            done
+            ;;
+          s)
+            read -p "Enter service name (comma-separated): " input_services
+            IFS=',' read -ra selected <<< "$input_services"
+            for service in "${selected[@]}"; do
+              service=$(echo "$service" | tr -d ' ')
+              start_service "$service" || log_warning "Failed to start $service"
+            done
+            ;;
+          *)
+            log_info "Starting CPU services..."
+            for service in "${CPU_SERVICES[@]}"; do
+              start_service "$service" || log_warning "Failed to start $service"
+            done
+            ;;
+        esac
         ;;
       5)
-        read -p "All services (a) or specific (s)? " mode
-        if [ "$mode" = "a" ]; then
-          for service in "${SERVICES[@]}"; do
-            stop_service "$service" || log_warning "Failed to stop $service"
-          done
-        else
-          read -p "Enter service name (comma-separated): " input_services
-          IFS=',' read -ra selected <<< "$input_services"
-          for service in "${selected[@]}"; do
-            service=$(echo "$service" | tr -d ' ')
-            stop_service "$service" || log_warning "Failed to stop $service"
-          done
-        fi
+        read -p "Stop: [c]pu, [g]pu, [a]ll, or [s]pecific services? [a]: " mode
+        mode=${mode:-a}
+        case "$mode" in
+          c)
+            log_info "Stopping CPU services..."
+            for service in "${CPU_SERVICES[@]}"; do
+              stop_service "$service" || log_warning "Failed to stop $service"
+            done
+            ;;
+          g)
+            log_info "Stopping GPU services..."
+            for service in "${GPU_SERVICES[@]}"; do
+              stop_service "$service" || log_warning "Failed to stop $service"
+            done
+            ;;
+          s)
+            read -p "Enter service name (comma-separated): " input_services
+            IFS=',' read -ra selected <<< "$input_services"
+            for service in "${selected[@]}"; do
+              service=$(echo "$service" | tr -d ' ')
+              stop_service "$service" || log_warning "Failed to stop $service"
+            done
+            ;;
+          *)
+            log_info "Stopping all services..."
+            for service in "${SERVICES[@]}"; do
+              stop_service "$service" || log_warning "Failed to stop $service"
+            done
+            ;;
+        esac
         ;;
       6)
         k8s_start
@@ -2144,8 +2204,6 @@ main() {
           i) for s in "${INFRA_SERVICES[@]}" "${ORCHESTRATOR[@]}"; do commit_push "$s" "$msg" "false" || log_warning "Failed: $s"; done ;;
           a) for s in "${ALL_SERVICES[@]}"; do commit_push "$s" "$msg" "false" || log_warning "Failed: $s"; done ;;
           r) for s in "${ALL_REPOS[@]}"; do commit_push "$s" "$msg" "false" || log_warning "Failed: $s"; done ;;
-        esac
-            ;;
         esac
         ;;
       9)
