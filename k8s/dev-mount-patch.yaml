@@ -1,0 +1,23 @@
+# Kubernetes patch file to add development volume mounts to existing deployments
+# Usage: kubectl patch deployment <deployment-name> -n fks-trading --patch-file dev-mount-patch.yaml
+
+spec:
+  template:
+    spec:
+      containers:
+      - name: web
+        volumeMounts:
+        - name: dev-web-src
+          mountPath: /app/src
+        - name: dev-web-templates
+          mountPath: /app/src/templates
+      volumes:
+      - name: dev-web-src
+        hostPath:
+          path: /mnt/fks-dev/web/src
+          type: DirectoryOrCreate
+      - name: dev-web-templates
+        hostPath:
+          path: /mnt/fks-dev/web/src/templates
+          type: DirectoryOrCreate
+

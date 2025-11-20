@@ -215,9 +215,9 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: fks-web
+            name: web
             port:
-              number: 3001
+              number: 8000
   
   # Main service (Rust management & monitoring)
   - host: main.fkstrading.xyz

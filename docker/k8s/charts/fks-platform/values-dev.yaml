@@ -32,6 +32,14 @@ fks_api:
       memory: 128Mi
   autoscaling:
     enabled: false
+  # Development volume mounts
+  devMounts:
+    enabled: true
+    mounts:
+      - name: api-src
+        hostPath: /mnt/fks-dev/api/src
+        containerPath: /app/src
+        readOnly: false
 
 fks_app:
   replicaCount: 1
@@ -44,6 +52,14 @@ fks_app:
       memory: 512Mi
   autoscaling:
     enabled: false
+  # Development volume mounts
+  devMounts:
+    enabled: true
+    mounts:
+      - name: app-src
+        hostPath: /mnt/fks-dev/app/src
+        containerPath: /app/src
+        readOnly: false
 
 fks_ai:
   replicaCount: 1
@@ -104,6 +120,18 @@ fks_web:
     requests:
       cpu: 50m
       memory: 128Mi
+  # Development volume mounts for hot-reloading code changes
+  devMounts:
+    enabled: true
+    mounts:
+      - name: web-src
+        hostPath: /mnt/fks-dev/web/src
+        containerPath: /app/src
+        readOnly: false
+      - name: web-templates
+        hostPath: /mnt/fks-dev/web/src/templates
+        containerPath: /app/src/templates
+        readOnly: false
 
 # Minimal database for development
 postgresql:

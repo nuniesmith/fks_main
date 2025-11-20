@@ -121,12 +121,37 @@ spec:
           mountPath: /tmp
         - name: logs
           mountPath: /app/logs
+        - name: staticfiles
+          mountPath: /app/staticfiles
+        {{- if and (hasKey $config "devMounts") $config.devMounts.enabled }}
+        {{- range $mount := $config.devMounts.mounts }}
+        - name: dev-{{ $mount.name }}
+          mountPath: {{ $mount.containerPath }}
+          {{- if $mount.readOnly }}
+          readOnly: true
+          {{- end }}
+        {{- end }}
+        {{- end }}
       
       volumes:
       - name: tmp
         emptyDir: {}
       - name: logs
         emptyDir: {}
+      - name: staticfiles
+        emptyDir: {}
+      {{- if and (hasKey $config "devMounts") $config.devMounts.enabled }}
+      {{- range $mount := $config.devMounts.mounts }}
+      - name: dev-{{ $mount.name }}
+        {{- if eq $.Values.global.environment "development" }}
+        hostPath:
+          path: {{ $mount.hostPath }}
+          type: DirectoryOrCreate
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
+      {{- end }}
+      {{- end }}
       
       restartPolicy: Always
       terminationGracePeriodSeconds: 30

@@ -290,11 +290,44 @@ run_parallel() {
 
 validate_service() {
   local service="$1"
-  if [[ ! " ${SERVICES[*]} " =~ " ${service} " ]]; then
-    log_error "Invalid service: $service"
-    return 1
+  local skip_validation="${2:-false}"
+  
+  # If validation is explicitly skipped (e.g., in parallel builds where we know services are valid)
+  if [ "$skip_validation" = "true" ]; then
+    return 0
   fi
-  return 0
+  
+  # First, try to validate using SERVICES array if available and populated
+  if [ -n "${SERVICES+x}" ] && [ ${#SERVICES[@]} -gt 0 ]; then
+    if [[ " ${SERVICES[*]} " =~ " ${service} " ]]; then
+      return 0
+    fi
+  fi
+  
+  # Fallback: validate by checking if service directory exists
+  # Calculate REPO_DIR if not set (for subshell contexts)
+  local repo_dir="${REPO_DIR:-}"
+  if [ -z "$repo_dir" ]; then
+    # Try to determine REPO_DIR from script location
+    local script_path
+    script_path=$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")
+    if [ -n "$script_path" ]; then
+      local project_root
+      project_root=$(cd "$(dirname "$script_path")" && pwd)
+      repo_dir=$(cd "$project_root/.." && pwd)
+    fi
+  fi
+  
+  if [ -n "$repo_dir" ]; then
+    local service_path="$repo_dir/$service"
+    if [ -d "$service_path" ]; then
+      return 0
+    fi
+  fi
+  
+  # If we get here, validation failed
+  log_error "Invalid service: $service"
+  return 1
 }
 
 validate_tag() {
@@ -313,7 +346,25 @@ validate_tag() {
 
 get_service_path() {
   local service="$1"
-  echo "$REPO_DIR/$service"
+  local repo_dir="${REPO_DIR:-}"
+  
+  # If REPO_DIR not set, calculate it (for subshell contexts)
+  if [ -z "$repo_dir" ]; then
+    local script_path
+    script_path=$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")
+    if [ -n "$script_path" ]; then
+      local project_root
+      project_root=$(cd "$(dirname "$script_path")" && pwd)
+      repo_dir=$(cd "$project_root/.." && pwd)
+    fi
+  fi
+  
+  if [ -z "$repo_dir" ]; then
+    echo ""  # Return empty if we can't determine path
+    return 1
+  fi
+  
+  echo "$repo_dir/$service"
 }
 
 get_repo_path() {
@@ -736,8 +787,9 @@ build_docker() {
   local service="$1"
   local tag="${2:-$DEFAULT_TAG}"
   local push="${3:-false}"
+  local skip_validation="${4:-false}"
 
-  validate_service "$service" || return 1
+  validate_service "$service" "$skip_validation" || return 1
   validate_tag "$tag" || return 1
 
   local service_path
@@ -833,14 +885,64 @@ build_all_services() {
   fi
   
   # Build services
+  # Track build start time to identify newly built images
+  local build_start_time=$(date +%s)
+  
   if [ "$ENABLE_PARALLEL" = "true" ] && [ ${#services_to_build[@]} -gt 3 ]; then
     log_info "Building services in parallel (max: $MAX_PARALLEL)..."
     # Create wrapper function for parallel execution
+    # Note: tag and push are captured from parent scope
+    # Skip validation since we already know services are valid (from SERVICES array)
     build_service_wrapper() {
       local svc="$1"
-      build_docker "$svc" "$tag" "$push"
+      local build_tag="${tag:-$DEFAULT_TAG}"
+      local build_push="${push:-false}"
+      build_docker "$svc" "$build_tag" "$build_push" "true"
     }
-    run_parallel "build_service_wrapper" "${services_to_build[@]}"
+    if ! run_parallel "build_service_wrapper" "${services_to_build[@]}"; then
+      # Check which services actually built successfully by checking image timestamps
+      local newly_built=()
+      local failed_builds=()
+      for service in "${services_to_build[@]}"; do
+        local image_name="$DOCKER_USERNAME/$DOCKER_REPO:${service}-${tag}"
+        if docker image inspect "$image_name" &>/dev/null 2>&1; then
+          # Check if image was created after build started
+          local image_created
+          image_created=$(docker image inspect "$image_name" --format='{{.Created}}' 2>/dev/null | xargs -I {} date -d {} +%s 2>/dev/null || echo "0")
+          if [ "$image_created" -ge "$build_start_time" ]; then
+            newly_built+=("$service")
+          else
+            failed_builds+=("$service")
+          fi
+        else
+          failed_builds+=("$service")
+        fi
+      done
+      if [ ${#newly_built[@]} -gt 0 ]; then
+        log_info "Newly built: ${#newly_built[@]}/${#services_to_build[@]} services: ${newly_built[*]}"
+      fi
+      if [ ${#failed_builds[@]} -gt 0 ]; then
+        log_warning "Builds failed for: ${failed_builds[*]}"
+        log_info "Check build logs for details:"
+        for svc in "${failed_builds[@]}"; do
+          if [ -f "/tmp/build-$svc.log" ]; then
+            local error_line
+            error_line=$(tail -3 "/tmp/build-$svc.log" 2>/dev/null | grep -i "error\|failed\|invalid" | head -1 || echo "")
+            if [ -n "$error_line" ]; then
+              log_info "  $svc: $(echo "$error_line" | sed 's/^[[:space:]]*//' | cut -c1-80)"
+            else
+              log_info "  $svc: See /tmp/build-$svc.log"
+            fi
+          else
+            log_info "  $svc: Log file not found"
+          fi
+        done
+      fi
+      # Return failure if all builds failed
+      if [ ${#failed_builds[@]} -eq ${#services_to_build[@]} ]; then
+        return 1
+      fi
+    fi
   else
     log_info "Building services sequentially..."
     local failed_services=()
@@ -1190,7 +1292,68 @@ k8s_start() {
   
   log_info "Building all service images with tag: $image_tag"
   log_info "This will build images locally and load them into Minikube"
-  build_all_services "$image_tag" "false" || log_warning "Some service builds may have failed, but continuing..."
+  
+  # Build services and track results
+  local build_failed=false
+  if ! build_all_services "$image_tag" "false"; then
+    build_failed=true
+    log_warning "Some service builds failed. Checking which images are available..."
+  fi
+  
+  # Verify which images are available (newly built or existing)
+  local available_images=()
+  local missing_images=()
+  local existing_images=()
+  local build_timestamp=$(date +%s)
+  
+  for service in "${SERVICES[@]}"; do
+    local image_name="$DOCKER_USERNAME/$DOCKER_REPO:${service}-${image_tag}"
+    if docker image inspect "$image_name" &>/dev/null 2>&1; then
+      available_images+=("$service")
+      # Check if image is newly built (within last 5 minutes) or existing
+      local image_created
+      image_created=$(docker image inspect "$image_name" --format='{{.Created}}' 2>/dev/null | xargs -I {} date -d {} +%s 2>/dev/null || echo "0")
+      local age_seconds=$((build_timestamp - image_created))
+      if [ "$age_seconds" -gt 300 ]; then
+        existing_images+=("$service")
+      fi
+    else
+      missing_images+=("$service")
+    fi
+  done
+  
+  if [ ${#available_images[@]} -eq 0 ]; then
+    log_error "No service images are available!"
+    log_info "Check build logs in /tmp/build-*.log for details"
+    if [ ${#missing_images[@]} -gt 0 ]; then
+      log_info "Missing services: ${missing_images[*]}"
+      log_info "Example: tail -50 /tmp/build-${missing_images[0]}.log"
+    fi
+    if [ "${INTERACTIVE:-true}" = "true" ]; then
+      read -p "Continue anyway? (y/n): " continue_choice
+      if [ "$continue_choice" != "y" ]; then
+        log_error "Aborting deployment - no images available"
+        return 1
+      fi
+    else
+      log_error "Aborting deployment - no images available (non-interactive mode)"
+      return 1
+    fi
+  else
+    if [ ${#existing_images[@]} -gt 0 ]; then
+      log_warning "Using ${#existing_images[@]} existing image(s) (not newly built): ${existing_images[*]}"
+    fi
+    local newly_built_count=$((${#available_images[@]} - ${#existing_images[@]}))
+    if [ "$newly_built_count" -gt 0 ]; then
+      log_success "Successfully built $newly_built_count/${#SERVICES[@]} service images in this run"
+    fi
+    log_info "Total available images: ${#available_images[@]}/${#SERVICES[@]}"
+    if [ ${#missing_images[@]} -gt 0 ]; then
+      log_warning "Missing images: ${missing_images[*]}"
+      log_info "These will be skipped during image loading"
+      log_info "To debug, check: tail -50 /tmp/build-<service>.log"
+    fi
+  fi
   
   # Load all local images into Minikube
   log_info "Loading all local images into Minikube..."
@@ -1373,13 +1536,30 @@ EOF
   fi
 
   # Start kubectl proxy in background if not running
+  # Must bind to 0.0.0.0 to be accessible from Docker containers via host.docker.internal
   if ! pgrep -f "kubectl proxy" > /dev/null; then
-    log_info "Starting kubectl proxy in background..."
-    nohup kubectl proxy --port=8001 > /tmp/kubectl-proxy.log 2>&1 &
-    sleep 2
-    log_success "kubectl proxy started on port 8001"
+    log_info "Starting kubectl proxy in background (accessible from Docker containers)..."
+    # Bind to all interfaces (0.0.0.0) so nginx container can access via host.docker.internal
+    # Disable filtering to allow access from Docker network
+    nohup kubectl proxy --port=8001 --address=0.0.0.0 --accept-hosts='.*' --disable-filter > /tmp/kubectl-proxy.log 2>&1 &
+    sleep 3
+    
+    # Verify proxy is running
+    if pgrep -f "kubectl proxy" > /dev/null; then
+      log_success "kubectl proxy started on 0.0.0.0:8001 (accessible from Docker)"
+      log_info "Proxy log: /tmp/kubectl-proxy.log"
+    else
+      log_error "Failed to start kubectl proxy"
+      return 1
+    fi
   else
     log_info "kubectl proxy is already running"
+    # Check if it's bound to the right address
+    if netstat -tln 2>/dev/null | grep -q ":8001.*0.0.0.0" || ss -tln 2>/dev/null | grep -q ":8001.*0.0.0.0"; then
+      log_success "kubectl proxy is accessible from Docker containers"
+    else
+      log_warning "kubectl proxy may not be accessible from Docker containers (check binding)"
+    fi
   fi
 
   # Create dashboard URL with token
@@ -2244,7 +2424,7 @@ main() {
           g)
             log_info "Building GPU services only..."
             for service in "${GPU_SERVICES[@]}"; do
-              build_service "$service" "$tag" "$([ "$push_choice" = "y" ] && echo "true" || echo "false")" || log_warning "Failed: $service"
+              build_docker "$service" "$tag" "$([ "$push_choice" = "y" ] && echo "true" || echo "false")" || log_warning "Failed: $service"
             done
             ;;
           a)
@@ -2254,7 +2434,7 @@ main() {
           *)
             log_info "Building CPU services only..."
             for service in "${CPU_SERVICES[@]}"; do
-              build_service "$service" "$tag" "$([ "$push_choice" = "y" ] && echo "true" || echo "false")" || log_warning "Failed: $service"
+              build_docker "$service" "$tag" "$([ "$push_choice" = "y" ] && echo "true" || echo "false")" || log_warning "Failed: $service"
             done
             ;;
         esac
