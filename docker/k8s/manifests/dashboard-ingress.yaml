@@ -17,6 +17,15 @@ spec:
   ingressClassName: nginx
   rules:
   - host: dashboard.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kubernetes-dashboard
+            port:
+              number: 443
   - host: k8s.fkstrading.xyz
     http:
       paths:
@@ -30,5 +39,6 @@ spec:
   tls:
   - hosts:
     - dashboard.fkstrading.xyz
+    - k8s.fkstrading.xyz
     secretName: dashboard-tls
 
