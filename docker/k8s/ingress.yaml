@@ -350,3 +350,15 @@ spec:
             name: kubernetes-dashboard
             port:
               number: 80
+  
+  # Alertmanager
+  - host: alertmanager.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: alertmanager
+            port:
+              number: 9093

@@ -9,7 +9,7 @@ metadata:
   namespace: kubernetes-dashboard
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     nginx.ingress.kubernetes.io/rewrite-target: /
     # Note: configuration-snippet is disabled by ingress administrator
     # Using backend-protocol HTTPS instead for SSL verification
@@ -25,7 +25,7 @@ spec:
           service:
             name: kubernetes-dashboard
             port:
-              number: 443
+              number: 80
   - host: k8s.fkstrading.xyz
     http:
       paths:
@@ -35,7 +35,7 @@ spec:
           service:
             name: kubernetes-dashboard
             port:
-              number: 443
+              number: 80
   tls:
   - hosts:
     - dashboard.fkstrading.xyz
