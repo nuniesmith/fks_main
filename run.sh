@@ -1520,6 +1520,14 @@ setup_dashboard_auto_token() {
   else
     log_info "Dashboard already installed"
   fi
+  
+  # Check for and remove duplicate dashboard ingress if exists
+  local duplicate_ingress
+  duplicate_ingress=$(kubectl get ingress -n "$namespace" -o jsonpath='{.items[?(@.metadata.name=="kubernetes-dashboard-k8s")].metadata.name}' 2>/dev/null || echo "")
+  if [ -n "$duplicate_ingress" ]; then
+    log_info "Removing duplicate dashboard ingress: $duplicate_ingress"
+    kubectl delete ingress "$duplicate_ingress" -n "$namespace" 2>/dev/null || true
+  fi
 
   # Create admin user and service account if not exists
   if ! kubectl get serviceaccount admin-user -n "$namespace" &>/dev/null; then
@@ -1691,6 +1699,101 @@ SCRIPT
       fi
     fi
   fi
+}
+
+# Verify ingress configuration and check for common issues
+verify_ingress_configuration() {
+  local namespace="${1:-fks-trading}"
+  local minikube_ip
+  minikube_ip=$(minikube ip 2>/dev/null || echo "")
+  
+  if [ -z "$minikube_ip" ]; then
+    log_warning "Could not determine minikube IP for ingress verification"
+    return 1
+  fi
+
+  log_info "Checking ingress resources..."
+  local ingress_count
+  ingress_count=$(kubectl get ingress -A 2>/dev/null | grep -v "^NAME" | wc -l || echo "0")
+  log_info "Found $ingress_count ingress resource(s)"
+
+  # Check for duplicate host entries
+  log_info "Checking for duplicate ingress host entries..."
+  local duplicate_hosts
+  duplicate_hosts=$(kubectl get ingress -A -o jsonpath='{range .items[*]}{.spec.rules[*].host}{"\n"}{end}' 2>/dev/null | \
+    sort | uniq -d || echo "")
+  
+  if [ -n "$duplicate_hosts" ]; then
+    log_warning "Found duplicate host entries in ingress:"
+    echo "$duplicate_hosts" | while read -r host; do
+      if [ -n "$host" ]; then
+        echo "  - $host"
+      fi
+    done
+    log_info "Consider consolidating duplicate ingress resources"
+  fi
+
+  # Check ingress controller status
+  if kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller --no-headers 2>/dev/null | \
+    grep -q "Running"; then
+    log_success "Ingress controller is running"
+  else
+    log_warning "Ingress controller may not be running properly"
+  fi
+
+  # Display configured domains
+  log_info "Configured ingress domains:"
+  kubectl get ingress -A -o jsonpath='{range .items[*]}{.metadata.namespace}{"\t"}{.metadata.name}{"\t"}{.spec.rules[*].host}{"\n"}{end}' 2>/dev/null | \
+    grep -v "^$" | while IFS=$'\t' read -r ns name hosts; do
+      if [ -n "$hosts" ]; then
+        echo "  $ns/$name: $hosts"
+      fi
+    done
+}
+
+# Display Kubernetes access information
+display_k8s_access_info() {
+  local namespace="${1:-fks-trading}"
+  local minikube_ip
+  minikube_ip=$(minikube ip 2>/dev/null || echo "192.168.49.2")
+  
+  echo ""
+  log_success "╔══════════════════════════════════════════════════════════╗"
+  log_success "║  Kubernetes Deployment Complete                          ║"
+  log_success "╚══════════════════════════════════════════════════════════╝"
+  echo ""
+  echo -e "${CYAN}Access Information:${NC}"
+  echo "  Minikube IP: $minikube_ip"
+  echo ""
+  echo -e "${YELLOW}Domain Configuration:${NC}"
+  echo "  Add these to your /etc/hosts file:"
+  echo "    $minikube_ip fkstrading.xyz"
+  echo "    $minikube_ip api.fkstrading.xyz"
+  echo "    $minikube_ip app.fkstrading.xyz"
+  echo "    $minikube_ip execution.fkstrading.xyz"
+  echo "    $minikube_ip k8s.fkstrading.xyz"
+  echo "    $minikube_ip grafana.fkstrading.xyz"
+  echo "    $minikube_ip prometheus.fkstrading.xyz"
+  echo "    $minikube_ip alertmanager.fkstrading.xyz"
+  echo ""
+  echo -e "${YELLOW}Service URLs:${NC}"
+  echo "  - Main: http://fkstrading.xyz"
+  echo "  - API: http://api.fkstrading.xyz"
+  echo "  - Dashboard: http://k8s.fkstrading.xyz"
+  echo ""
+  echo -e "${YELLOW}Ingress NodePort:${NC}"
+  local http_port https_port
+  http_port=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 2>/dev/null || echo "32081")
+  https_port=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.spec.ports[?(@.port==443)].nodePort}' 2>/dev/null || echo "31486")
+  echo "  HTTP: $http_port"
+  echo "  HTTPS: $https_port"
+  echo ""
+  echo -e "${YELLOW}Useful Commands:${NC}"
+  echo "  Check pods: kubectl get pods -n $namespace"
+  echo "  Check services: kubectl get svc -n $namespace"
+  echo "  Check ingress: kubectl get ingress -A"
+  echo "  View logs: kubectl logs -n $namespace <pod-name>"
+  echo ""
 }
 
 k8s_stop() {
