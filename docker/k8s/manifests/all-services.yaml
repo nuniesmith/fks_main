@@ -169,8 +169,8 @@ spec:
   type: ClusterIP
   ports:
     - name: http
-      port: 8000
-      targetPort: 8000
+      port: 3001
+      targetPort: 3001
   selector:
     app: fks-web
 
@@ -197,7 +197,7 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            cd /app/shared_src
+            cd /app/src
             python manage.py migrate || echo "Migration failed, but continuing"
             python manage.py collectstatic --noinput || echo "Collectstatic failed, but continuing"
         env:
@@ -233,7 +233,7 @@ spec:
         imagePullPolicy: IfNotPresent
         workingDir: /app
         ports:
-        - containerPort: 8000
+        - containerPort: 3001
         env:
         - name: TZ
           value: "America/Toronto"
@@ -281,24 +281,24 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            cd /app
+            cd /app/src
             gunicorn config.wsgi:application \
-              --bind 0.0.0.0:8000 \
-              --workers 4 \
+              --bind 0.0.0.0:3001 \
+              --workers 2 \
               --timeout 120 \
               --access-logfile - \
               --error-logfile -
         livenessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: 3001
           initialDelaySeconds: 60
           periodSeconds: 30
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: 3001
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -616,7 +616,7 @@ spec:
           - --concurrency=4
         env:
         - name: DJANGO_SETTINGS_MODULE
-          value: "config.settings"
+          value: "src.django.settings"
         - name: PYTHONPATH
           value: "/app/src:/app/shared_src"
         - name: CELERY_BROKER_URL
@@ -672,7 +672,7 @@ spec:
             python manage.py migrate django_celery_beat --noinput || echo "Migration failed, but continuing"
         env:
         - name: DJANGO_SETTINGS_MODULE
-          value: "config.settings"
+          value: "src.django.settings"
         - name: PYTHONPATH
           value: "/app/src:/app/shared_src"
         - name: POSTGRES_DB
@@ -703,7 +703,7 @@ spec:
           - django_celery_beat.schedulers:DatabaseScheduler
         env:
         - name: DJANGO_SETTINGS_MODULE
-          value: "config.settings"
+          value: "src.django.settings"
         - name: PYTHONPATH
           value: "/app/src:/app/shared_src"
         - name: CELERY_BROKER_URL
@@ -776,7 +776,7 @@ spec:
         - containerPort: 5555
         env:
         - name: DJANGO_SETTINGS_MODULE
-          value: "config.settings"
+          value: "src.django.settings"
         - name: PYTHONPATH
           value: "/app/src:/app/shared_src"
         - name: CELERY_BROKER_URL

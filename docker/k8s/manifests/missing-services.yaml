@@ -556,12 +556,37 @@ spec:
           value: "fks_main"
         - name: SERVICE_PORT
           value: "8010"
-        - name: MONITOR_SERVICE_URL
+        - name: MONITOR_URL
           value: "http://fks-monitor:8013"
+        - name: K8S_NAMESPACE
+          value: "fks-trading"
+        - name: RUST_LOG
+          value: "info"
+        - name: RUST_BACKTRACE
+          value: "1"
+        - name: DOMAIN
+          value: "fkstrading.xyz"
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1536Mi
+          requests:
+            cpu: 200m
+            memory: 768Mi
         livenessProbe:
           httpGet:
             path: /health
             port: 8010
           initialDelaySeconds: 30
           periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8010
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
 
