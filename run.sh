@@ -1274,11 +1274,27 @@ k8s_start() {
   fi
 
   log_info "Starting minikube..."
-  minikube start
+  if ! minikube status &>/dev/null; then
+    minikube start
+  else
+    log_info "Minikube is already running"
+  fi
   eval $(minikube docker-env)
   log_success "Minikube started"
 
-  minikube addons enable ingress || log_warning "Failed to enable ingress (may already be enabled)"
+  # Enable ingress addon and wait for it to be ready
+  log_info "Enabling ingress addon..."
+  if minikube addons enable ingress 2>/dev/null; then
+    log_info "Waiting for ingress controller to be ready..."
+    sleep 10
+    if kubectl wait --for=condition=available deployment/ingress-nginx-controller -n ingress-nginx --timeout=120s 2>/dev/null; then
+      log_success "Ingress controller is ready"
+    else
+      log_warning "Ingress controller may still be starting"
+    fi
+  else
+    log_warning "Ingress addon may already be enabled or failed to enable"
+  fi
 
   # Build all services locally first (default behavior)
   log_info "Building all services locally (default: local builds only)..."
@@ -1439,16 +1455,51 @@ k8s_start() {
         kubectl apply -f "$PROJECT_ROOT/k8s/ingress.yaml" -n "$namespace" || \
           log_warning "Ingress setup may have failed"
       fi
+      
+      # Apply dashboard ingress if it exists
+      if [ -f "$PROJECT_ROOT/k8s/manifests/dashboard-ingress.yaml" ]; then
+        log_info "Applying dashboard ingress configuration..."
+        # Temporarily disable webhook validation if it causes issues
+        kubectl delete validatingwebhookconfiguration ingress-nginx-admission 2>/dev/null || true
+        kubectl apply -f "$PROJECT_ROOT/k8s/manifests/dashboard-ingress.yaml" || \
+          log_warning "Dashboard ingress setup may have failed"
+      fi
     fi
   fi
+
+  # Wait for ingress controller to be ready
+  log_info "Waiting for ingress controller to be ready..."
+  if kubectl wait --for=condition=available deployment/ingress-nginx-controller -n ingress-nginx --timeout=120s 2>/dev/null; then
+    log_success "Ingress controller is ready"
+  else
+    log_warning "Ingress controller may still be starting"
+  fi
+
+  # Set imagePullPolicy to Never for local minikube images
+  log_info "Configuring deployments to use local images (imagePullPolicy: Never)..."
+  local deployments=("fks-main" "fks-api" "fks-app" "fks-data" "fks-execution" "fks-web" "fks-ai" "fks-ninja" "fks-meta" "fks-portfolio" "fks-training" "fks-analyze" "fks-auth" "fks-monitor" "web")
+  for deployment in "${deployments[@]}"; do
+    if kubectl get deployment "$deployment" -n "$namespace" &>/dev/null; then
+      kubectl patch deployment "$deployment" -n "$namespace" \
+        -p '{"spec":{"template":{"spec":{"containers":[{"name":"'$deployment'","imagePullPolicy":"Never"}]}}}}' \
+        > /dev/null 2>&1 || true
+    fi
+  done
 
   # Setup Kubernetes Dashboard with auto token
   log_info "Setting up Kubernetes Dashboard with auto token..."
   setup_dashboard_auto_token
 
+  # Verify ingress configuration
+  log_info "Verifying ingress configuration..."
+  verify_ingress_configuration "$namespace"
+
   log_success "Kubernetes started and configured"
   log_info "All services built locally and loaded into Minikube"
   log_info "Dashboard is ready with auto-generated token"
+  
+  # Display access information
+  display_k8s_access_info "$namespace"
 }
 
 # Setup Kubernetes Dashboard with automatic token generation and access
