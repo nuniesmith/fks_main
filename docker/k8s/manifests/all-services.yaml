@@ -242,7 +242,9 @@ spec:
         - name: DJANGO_SETTINGS_MODULE
           value: "config.settings"
         - name: PYTHONPATH
-          value: "/app/src:/app/shared_src"
+          value: "/app/src:/app"
+        - name: SERVICE_PORT
+          value: "3001"
         - name: DJANGO_SECRET_KEY
           valueFrom:
             secretKeyRef:
@@ -278,16 +280,26 @@ spec:
           value: "*"
         - name: FKS_PORTFOLIO_URL
           value: "http://fks-portfolio:8012"
-        command: ["/bin/sh", "-c"]
+        # Override entrypoint to use uvicorn directly instead of python -m uvicorn
+        command: ["/bin/bash", "-c"]
         args:
           - |
-            cd /app/src
-            gunicorn config.wsgi:application \
-              --bind 0.0.0.0:3001 \
-              --workers 2 \
-              --timeout 120 \
-              --access-logfile - \
-              --error-logfile -
+            set +e
+            SERVICE_NAME=${SERVICE_NAME:-fks_web}
+            SERVICE_PORT=${SERVICE_PORT:-3001}
+            HOST=${HOST:-0.0.0.0}
+            echo "Starting ${SERVICE_NAME} on ${HOST}:${SERVICE_PORT}"
+            mkdir -p /app/staticfiles
+            chmod 755 /app/staticfiles
+            echo "Collecting static files..."
+            cd /app
+            # Skip collectstatic for now to focus on getting the server running
+            echo "⚠ Skipping static file collection for now"
+            set -e
+            # Start uvicorn - use uvicorn command directly with explicit PYTHONPATH
+            cd /app
+            export PYTHONPATH=/app/src:/app
+            exec uvicorn src.config.asgi:application --host "${HOST}" --port "${SERVICE_PORT}" --no-access-log --log-level info
         livenessProbe:
           httpGet:
             path: /health

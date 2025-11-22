@@ -31,7 +31,7 @@ spec:
           service:
             name: web
             port:
-              number: 8000
+              number: 3001
       
       # Main service (Rust management & monitoring)
       - path: /main(/|$)(.*)
@@ -217,7 +217,7 @@ spec:
           service:
             name: web
             port:
-              number: 8000
+              number: 3001
   
   # Main service (Rust management & monitoring)
   - host: main.fkstrading.xyz
@@ -336,5 +336,17 @@ spec:
         backend:
           service:
             name: fks-platform-prometheus-server
+            port:
+              number: 80
+  
+  # Kubernetes Dashboard
+  - host: k8s.fkstrading.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kubernetes-dashboard
             port:
               number: 80

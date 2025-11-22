@@ -17,6 +17,7 @@ spec:
   ingressClassName: nginx
   rules:
   - host: dashboard.fkstrading.xyz
+  - host: k8s.fkstrading.xyz
     http:
       paths:
       - path: /
