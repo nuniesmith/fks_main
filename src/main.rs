@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
-    routing::{get, post, delete},
+    routing::{get, post},
     Router,
 };
 use kube::Client;
@@ -26,9 +26,11 @@ use runsh::RunShExecutor;
 
 #[derive(Clone)]
 struct AppState {
+    #[allow(dead_code)]
     config: AppConfig,
     k8s_client: Option<Client>,
     monitor_client: MonitorClient,
+    #[allow(dead_code)]
     service_registry: Arc<RwLock<HashMap<String, ServiceInfo>>>,
     runsh_executor: Option<Arc<RunShExecutor>>,
 }
@@ -318,7 +320,7 @@ async fn get_service(
 
 async fn scale_service(
     Path(name): Path<String>,
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // This would use k8s client to scale deployments
     // For now, return a placeholder
@@ -331,7 +333,7 @@ async fn scale_service(
 
 async fn restart_service(
     Path(name): Path<String>,
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // This would use k8s client to restart deployments
     Ok(Json(serde_json::json!({
@@ -450,7 +452,7 @@ async fn execute_runsh_command(
     let timeout_seconds = payload
         .get("timeout_seconds")
         .and_then(|v| v.as_u64())
-        .or_else(|| Some(300));
+        .or(Some(300));
 
     let runsh_cmd = runsh::RunShCommand {
         command,

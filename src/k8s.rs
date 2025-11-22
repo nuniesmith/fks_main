@@ -1,16 +1,18 @@
-/// Kubernetes integration module
-/// Handles K8s API interactions for orchestration
+//! Kubernetes integration module
+//! Handles K8s API interactions for orchestration
 
 use kube::{Client, Api};
 use k8s_openapi::api::apps::v1::Deployment;
 use k8s_openapi::api::core::v1::Pod;
 use anyhow::Result;
 
+#[allow(dead_code)]
 pub struct K8sManager {
     client: Client,
     namespace: String,
 }
 
+#[allow(dead_code)]
 impl K8sManager {
     pub fn new(client: Client, namespace: String) -> Self {
         Self { client, namespace }

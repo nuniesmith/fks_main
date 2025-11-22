@@ -60,12 +60,14 @@ impl MonitorClient {
         response.json().await.map_err(Into::into)
     }
 
+    #[allow(dead_code)]
     pub async fn get_metrics(&self) -> anyhow::Result<Value> {
         let url = format!("{}/api/v1/metrics", self.base_url);
         let response = self.client.get(&url).send().await?;
         response.json().await.map_err(Into::into)
     }
 
+    #[allow(dead_code)]
     pub async fn get_tests(&self) -> anyhow::Result<Value> {
         let url = format!("{}/api/v1/tests", self.base_url);
         let response = self.client.get(&url).send().await?;
