@@ -1,7 +1,7 @@
 /// FKS Main Orchestration Service
 /// Rust-based API for Kubernetes orchestration and service management
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
     response::Json,
     routing::{get, post},
@@ -477,11 +477,7 @@ async fn execute_runsh_command(
                 "duration_ms": response.duration_ms,
             });
 
-            if response.success {
-                Ok(Json(result))
-            } else {
-                Ok(Json(result))
-            }
+            Ok(Json(result))
         }
         Err(e) => {
             error!("Failed to execute run.sh command: {}", e);
