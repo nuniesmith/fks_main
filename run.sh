@@ -74,12 +74,12 @@ ORCHESTRATOR=(
 )
 
 # Pure shared / read-only repos (never built as images)
-# Note: config is in services/config but treated as shared infrastructure
+# Note: config is in infrastructure/config (moved from services/config)
 SHARED_REPOS=(
   actions     # GitHub Actions workflows (infrastructure/actions)
   dev         # Dev tools / fks_dev repo (infrastructure/dev)
   docker      # Base Dockerfiles + per-service overrides (infrastructure/docker)
-  config      # Helm charts, env files, shared YAMLs (services/config)
+  config      # Helm charts, env files, shared YAMLs (infrastructure/config)
   docs        # Documentation (infrastructure/docs)
   scripts     # Shared scripts (infrastructure/scripts)
 )
@@ -392,8 +392,15 @@ get_service_path() {
     return 1
   fi
   
-  # All services are directly in services/ directory
-  echo "$repo_dir/services/$service"
+  # Check infrastructure/ first (for services that moved there), then services/
+  if [ -d "$repo_dir/infrastructure/$service" ]; then
+    echo "$repo_dir/infrastructure/$service"
+  elif [ -d "$repo_dir/services/$service" ]; then
+    echo "$repo_dir/services/$service"
+  else
+    # Default to services/ for backward compatibility
+    echo "$repo_dir/services/$service"
+  fi
 }
 
 get_repo_path() {
@@ -417,23 +424,28 @@ get_repo_path() {
   fi
   
   # Determine repo type and return appropriate path
-  # Special case: config is in services/config but treated as shared
+  # Special case: config is in infrastructure/config (moved from services/config)
   if [ "$repo" = "config" ]; then
-    echo "$repo_dir/services/config"
+    if [ -d "$repo_dir/infrastructure/config" ]; then
+      echo "$repo_dir/infrastructure/config"
+    elif [ -d "$repo_dir/services/config" ]; then
+      echo "$repo_dir/services/config"
+    else
+      echo "$repo_dir/infrastructure/config"
+    fi
     return 0
   fi
   
   # Check if it's a service
   if [[ " ${ALL_SERVICES[*]} " =~ " ${repo} " ]]; then
-    # Services that moved to infrastructure/ - check there first, then services/
-    # This handles: analyze, monitor, nginx
+    # Services may be in infrastructure/ or services/ - check infrastructure first
     if [ -d "$repo_dir/infrastructure/$repo" ]; then
       echo "$repo_dir/infrastructure/$repo"
     elif [ -d "$repo_dir/services/$repo" ]; then
       echo "$repo_dir/services/$repo"
     else
-      # Return expected path even if doesn't exist yet
-      echo "$repo_dir/infrastructure/$repo"
+      # Default to services/ for backward compatibility (most services are there)
+      echo "$repo_dir/services/$repo"
     fi
   # Check if it's an app
   elif [[ " ${CLIENT_REPOS[*]} " =~ " ${repo} " ]]; then
@@ -1137,9 +1149,44 @@ push_docker_image() {
 # HEALTH CHECK FUNCTIONS
 # ============================================================================
 
+# Get config directory path (checks infrastructure/config first, then services/config)
+get_config_path() {
+  local repo_dir="${REPO_DIR:-}"
+  
+  if [ -z "$repo_dir" ]; then
+    local script_path
+    script_path=$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")
+    if [ -n "$script_path" ]; then
+      local project_root
+      project_root=$(cd "$(dirname "$script_path")" && pwd)
+      repo_dir=$(cd "$project_root/../.." && pwd)
+    fi
+  fi
+  
+  if [ -z "$repo_dir" ]; then
+    echo ""
+    return 1
+  fi
+  
+  if [ -d "$repo_dir/infrastructure/config" ]; then
+    echo "$repo_dir/infrastructure/config"
+  elif [ -d "$repo_dir/services/config" ]; then
+    echo "$repo_dir/services/config"
+  else
+    echo "$repo_dir/infrastructure/config"
+  fi
+}
+
 # Load service registry for health checks and service discovery
 load_service_registry() {
-  local registry_file="$REPO_DIR/services/config/service_registry.json"
+  local config_dir
+  config_dir=$(get_config_path)
+  if [ -z "$config_dir" ]; then
+    log_warning "Config directory not found"
+    return 1
+  fi
+  
+  local registry_file="$config_dir/service_registry.json"
   if [ ! -f "$registry_file" ]; then
     log_warning "Service registry not found: $registry_file"
     return 1
@@ -1153,7 +1200,9 @@ load_service_registry() {
 # Get service health URL from registry
 get_service_health_url() {
   local service="$1"
-  local registry_file="${SERVICE_REGISTRY_FILE:-$REPO_DIR/services/config/service_registry.json}"
+  local config_dir
+  config_dir=$(get_config_path)
+  local registry_file="${SERVICE_REGISTRY_FILE:-$config_dir/service_registry.json}"
   
   if [ ! -f "$registry_file" ]; then
     # Fallback: construct from service name
@@ -1260,7 +1309,9 @@ wait_for_service_health() {
 # Discover and ping all running FKS services
 discover_and_ping_services() {
   local service="$1"
-  local registry_file="${SERVICE_REGISTRY_FILE:-$REPO_DIR/services/config/service_registry.json}"
+  local config_dir
+  config_dir=$(get_config_path)
+  local registry_file="${SERVICE_REGISTRY_FILE:-$config_dir/service_registry.json}"
   
   if [ ! -f "$registry_file" ]; then
     log_warning "Service registry not found, skipping service discovery"
