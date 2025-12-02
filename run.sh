@@ -87,10 +87,10 @@ SHARED_REPOS=(
 # Mobile/Desktop applications (client apps)
 # Note: frontend may be in services/frontend but is treated as an app
 CLIENT_REPOS=(
-  android     # Android mobile app (Kotlin) - apps/android
-  apple       # iOS/macOS app (Swift/SwiftUI) - apps/apple
-  desktop     # Desktop app (Kotlin Multiplatform) - apps/desktop
-  web    # Web frontend (SvelteKit) - apps/frontend or services/frontend
+  android     # Android mobile app (Kotlin) - clients/android
+  apple       # iOS/macOS app (Swift/SwiftUI) - clients/apple
+  desktop     # Desktop app (Kotlin Multiplatform) - clients/desktop
+  web    # Web frontend (SvelteKit) - clients/web or services/frontend
 )
 
 # Composite arrays
@@ -425,7 +425,16 @@ get_repo_path() {
   
   # Check if it's a service
   if [[ " ${ALL_SERVICES[*]} " =~ " ${repo} " ]]; then
-    echo "$repo_dir/services/$repo"
+    # Services that moved to infrastructure/ - check there first, then services/
+    # This handles: analyze, monitor, nginx
+    if [ -d "$repo_dir/infrastructure/$repo" ]; then
+      echo "$repo_dir/infrastructure/$repo"
+    elif [ -d "$repo_dir/services/$repo" ]; then
+      echo "$repo_dir/services/$repo"
+    else
+      # Return expected path even if doesn't exist yet
+      echo "$repo_dir/infrastructure/$repo"
+    fi
   # Check if it's an app
   elif [[ " ${CLIENT_REPOS[*]} " =~ " ${repo} " ]]; then
     # Special case: frontend might be in services/frontend
@@ -433,10 +442,10 @@ get_repo_path() {
       if [ -d "$repo_dir/services/frontend" ]; then
         echo "$repo_dir/services/frontend"
       else
-        echo "$repo_dir/apps/frontend"
+        echo "$repo_dir/clients/frontend"
       fi
     else
-      echo "$repo_dir/apps/$repo"
+      echo "$repo_dir/clients/$repo"
     fi
   # Check if it's an infrastructure/shared repo
   elif [[ " ${SHARED_REPOS[*]} " =~ " ${repo} " ]]; then
@@ -445,8 +454,8 @@ get_repo_path() {
     # Default: try common locations
     if [ -d "$repo_dir/services/$repo" ]; then
       echo "$repo_dir/services/$repo"
-    elif [ -d "$repo_dir/apps/$repo" ]; then
-      echo "$repo_dir/apps/$repo"
+    elif [ -d "$repo_dir/clients/$repo" ]; then
+      echo "$repo_dir/clients/$repo"
     elif [ -d "$repo_dir/infrastructure/$repo" ]; then
       echo "$repo_dir/infrastructure/$repo"
     else
