@@ -34,69 +34,67 @@ spec:
         app: fks-portfolio
     spec:
       containers:
-      - name: portfolio
-        image: nuniesmith/fks:portfolio-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8012
-        env:
-        - name: SERVICE_NAME
-          value: "fks_portfolio"
-        - name: SERVICE_PORT
-          value: "8012"
-        - name: POSTGRES_DB
-          value: "trading_db"
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: fks-secrets
-              key: postgres-user
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: fks-secrets
-              key: postgres-password
-        - name: POSTGRES_HOST
-          value: "db"
-        - name: DATA_SERVICE_URL
-          value: "http://fks-data:8003"
-        - name: AI_SERVICE_URL
-          value: "http://fks-ai:8007"
-        - name: SIGNALS_DIR
-          value: "/app/signals"
-        - name: PORT
-          value: "8012"
-        - name: LOG_LEVEL
-          value: "INFO"
-        - name: DATA_DIR
-          value: "/app/data"
-        volumeMounts:
-        - name: signals
-          mountPath: /app/signals
-          readOnly: true
-        - name: data
-          mountPath: /app/data
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8012
-          initialDelaySeconds: 30
-          periodSeconds: 30
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 8012
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 3
-          failureThreshold: 3
+        - name: portfolio
+          image: nuniesmith/fks:portfolio-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8012
+          env:
+            - name: SERVICE_NAME
+              value: "fks_portfolio"
+            - name: SERVICE_PORT
+              value: "8012"
+            - name: POSTGRES_DB
+              value: "trading_db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: fks-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fks-secrets
+                  key: postgres-password
+            - name: POSTGRES_HOST
+              value: "db"
+            - name: DATA_SERVICE_URL
+              value: "http://fks-data:8003"
+            - name: AI_SERVICE_URL
+              value: "http://fks-ai:8007"
+            - name: SIGNALS_DIR
+              value: "/app/signals"
+            - name: PORT
+              value: "8012"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: DATA_DIR
+              value: "/app/data"
+          volumeMounts:
+            - name: signals
+              mountPath: /app/signals
+              readOnly: true
+            - name: data
+              mountPath: /app/data
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8012
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8012
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
       volumes:
-      - name: signals
-        hostPath:
-          path: /mnt/fks-signals
-          type: DirectoryOrCreate
-      - name: data
-        emptyDir: {}
+        - name: signals
+          emptyDir: {}
+        - name: data
+          emptyDir: {}
 
 ---
 # FKS Monitor Service
@@ -131,22 +129,22 @@ spec:
         app: fks-monitor
     spec:
       containers:
-      - name: monitor
-        image: nuniesmith/fks:monitor-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8013
-        env:
-        - name: SERVICE_NAME
-          value: "fks_monitor"
-        - name: SERVICE_PORT
-          value: "8013"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8013
-          initialDelaySeconds: 30
-          periodSeconds: 30
+        - name: monitor
+          image: nuniesmith/fks:monitor-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8013
+          env:
+            - name: SERVICE_NAME
+              value: "fks_monitor"
+            - name: SERVICE_PORT
+              value: "8013"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8013
+            initialDelaySeconds: 30
+            periodSeconds: 30
 
 ---
 # FKS Auth Service
@@ -181,36 +179,36 @@ spec:
         app: fks-auth
     spec:
       containers:
-      - name: auth
-        image: nuniesmith/fks:auth-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8009
-        env:
-        - name: SERVICE_NAME
-          value: "fks_auth"
-        - name: SERVICE_PORT
-          value: "8009"
-        - name: POSTGRES_DB
-          value: "trading_db"
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: fks-secrets
-              key: postgres-user
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: fks-secrets
-              key: postgres-password
-        - name: POSTGRES_HOST
-          value: "db"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8009
-          initialDelaySeconds: 30
-          periodSeconds: 30
+        - name: auth
+          image: nuniesmith/fks:auth-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8009
+          env:
+            - name: SERVICE_NAME
+              value: "fks_auth"
+            - name: SERVICE_PORT
+              value: "8009"
+            - name: POSTGRES_DB
+              value: "trading_db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: fks-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fks-secrets
+                  key: postgres-password
+            - name: POSTGRES_HOST
+              value: "db"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8009
+            initialDelaySeconds: 30
+            periodSeconds: 30
 
 ---
 # FKS Execution Service
@@ -245,40 +243,40 @@ spec:
         app: fks-execution
     spec:
       containers:
-      - name: execution
-        image: nuniesmith/fks:execution-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8004
-        env:
-        - name: SERVICE_NAME
-          value: "fks_execution"
-        - name: SERVICE_PORT
-          value: "8004"
-        - name: POSTGRES_DB
-          value: "trading_db"
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: fks-secrets
-              key: postgres-user
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: fks-secrets
-              key: postgres-password
-        - name: POSTGRES_HOST
-          value: "db"
-        - name: DATA_SERVICE_URL
-          value: "http://fks-data:8003"
-        - name: API_SERVICE_URL
-          value: "http://fks-api:8001"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8004
-          initialDelaySeconds: 30
-          periodSeconds: 30
+        - name: execution
+          image: nuniesmith/fks:execution-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8004
+          env:
+            - name: SERVICE_NAME
+              value: "fks_execution"
+            - name: SERVICE_PORT
+              value: "8004"
+            - name: POSTGRES_DB
+              value: "trading_db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: fks-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fks-secrets
+                  key: postgres-password
+            - name: POSTGRES_HOST
+              value: "db"
+            - name: DATA_SERVICE_URL
+              value: "http://fks-data:8003"
+            - name: API_SERVICE_URL
+              value: "http://fks-api:8001"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8004
+            initialDelaySeconds: 30
+            periodSeconds: 30
 
 ---
 # FKS Meta Service (MT5 Bridge)
@@ -313,24 +311,24 @@ spec:
         app: fks-meta
     spec:
       containers:
-      - name: meta
-        image: nuniesmith/fks:meta-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8005
-        env:
-        - name: SERVICE_NAME
-          value: "fks_meta"
-        - name: SERVICE_PORT
-          value: "8005"
-        - name: EXECUTION_SERVICE_URL
-          value: "http://fks-execution:8004"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8005
-          initialDelaySeconds: 30
-          periodSeconds: 30
+        - name: meta
+          image: nuniesmith/fks:meta-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8005
+          env:
+            - name: SERVICE_NAME
+              value: "fks_meta"
+            - name: SERVICE_PORT
+              value: "8005"
+            - name: EXECUTION_SERVICE_URL
+              value: "http://fks-execution:8004"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8005
+            initialDelaySeconds: 30
+            periodSeconds: 30
 
 ---
 # FKS Ninja Service (NinjaTrader8 Bridge)
@@ -365,30 +363,30 @@ spec:
         app: fks-ninja
     spec:
       containers:
-      - name: ninja
-        image: nuniesmith/fks:ninja-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8006
-        env:
-        - name: SERVICE_NAME
-          value: "fks_ninja"
-        - name: SERVICE_PORT
-          value: "8006"
-        - name: NINJATRADER_HOST
-          value: "100.80.141.117"
-        - name: NINJATRADER_PORT
-          value: "8080"
-        - name: NINJATRADER_TIMEOUT
-          value: "5"
-        - name: EXECUTION_SERVICE_URL
-          value: "http://fks-execution:8004"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8006
-          initialDelaySeconds: 30
-          periodSeconds: 30
+        - name: ninja
+          image: nuniesmith/fks:ninja-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8006
+          env:
+            - name: SERVICE_NAME
+              value: "fks_ninja"
+            - name: SERVICE_PORT
+              value: "8006"
+            - name: NINJATRADER_HOST
+              value: "100.80.141.117"
+            - name: NINJATRADER_PORT
+              value: "8080"
+            - name: NINJATRADER_TIMEOUT
+              value: "5"
+            - name: EXECUTION_SERVICE_URL
+              value: "http://fks-execution:8004"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8006
+            initialDelaySeconds: 30
+            periodSeconds: 30
 
 ---
 # FKS Analyze Service
@@ -423,22 +421,22 @@ spec:
         app: fks-analyze
     spec:
       containers:
-      - name: analyze
-        image: nuniesmith/fks:analyze-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8008
-        env:
-        - name: SERVICE_NAME
-          value: "fks_analyze"
-        - name: SERVICE_PORT
-          value: "8008"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8008
-          initialDelaySeconds: 30
-          periodSeconds: 30
+        - name: analyze
+          image: nuniesmith/fks:analyze-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8008
+          env:
+            - name: SERVICE_NAME
+              value: "fks_analyze"
+            - name: SERVICE_PORT
+              value: "8008"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8008
+            initialDelaySeconds: 30
+            periodSeconds: 30
 
 ---
 # FKS Training Service
@@ -473,45 +471,45 @@ spec:
         app: fks-training
     spec:
       containers:
-      - name: training
-        image: nuniesmith/fks:training-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8011
-        env:
-        - name: SERVICE_NAME
-          value: "fks_training"
-        - name: SERVICE_PORT
-          value: "8011"
-        - name: POSTGRES_DB
-          value: "trading_db"
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: fks-secrets
-              key: postgres-user
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: fks-secrets
-              key: postgres-password
-        - name: POSTGRES_HOST
-          value: "db"
-        - name: DATA_SERVICE_URL
-          value: "http://fks-data:8003"
-        resources:
-          requests:
-            memory: "4Gi"
-            cpu: "2000m"
-          limits:
-            memory: "8Gi"
-            cpu: "4000m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8011
-          initialDelaySeconds: 60
-          periodSeconds: 30
+        - name: training
+          image: nuniesmith/fks:training-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8011
+          env:
+            - name: SERVICE_NAME
+              value: "fks_training"
+            - name: SERVICE_PORT
+              value: "8011"
+            - name: POSTGRES_DB
+              value: "trading_db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: fks-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fks-secrets
+                  key: postgres-password
+            - name: POSTGRES_HOST
+              value: "db"
+            - name: DATA_SERVICE_URL
+              value: "http://fks-data:8003"
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "2000m"
+            limits:
+              memory: "8Gi"
+              cpu: "4000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8011
+            initialDelaySeconds: 60
+            periodSeconds: 30
 
 ---
 # FKS Main Service (Rust Orchestrator)
@@ -546,47 +544,46 @@ spec:
         app: fks-main
     spec:
       containers:
-      - name: main
-        image: nuniesmith/fks:main-latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8010
-        env:
-        - name: SERVICE_NAME
-          value: "fks_main"
-        - name: SERVICE_PORT
-          value: "8010"
-        - name: MONITOR_URL
-          value: "http://fks-monitor:8013"
-        - name: K8S_NAMESPACE
-          value: "fks-trading"
-        - name: RUST_LOG
-          value: "info"
-        - name: RUST_BACKTRACE
-          value: "1"
-        - name: DOMAIN
-          value: "fkstrading.xyz"
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 1536Mi
-          requests:
-            cpu: 200m
-            memory: 768Mi
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8010
-          initialDelaySeconds: 30
-          periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 8010
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-
+        - name: main
+          image: nuniesmith/fks:main-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8010
+          env:
+            - name: SERVICE_NAME
+              value: "fks_main"
+            - name: SERVICE_PORT
+              value: "8010"
+            - name: MONITOR_URL
+              value: "http://fks-monitor:8013"
+            - name: K8S_NAMESPACE
+              value: "fks-trading"
+            - name: RUST_LOG
+              value: "info"
+            - name: RUST_BACKTRACE
+              value: "1"
+            - name: DOMAIN
+              value: "fkstrading.xyz"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1536Mi
+            requests:
+              cpu: 200m
+              memory: 768Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8010
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8010
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
