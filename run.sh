@@ -1,8 +1,8 @@
 #!/bin/bash
 # run.sh - Unified Management Script for FKS Trading Platform
-# Version: 2.2 (Fully Categorized - Nov 19, 2025)
+# Version: 2.3 (Full Repo Support - Dec 2025)
 # Domain: fkstrading.xyz
-# Handles 14 services + shared repos with clear responsibility boundaries
+# Handles all services, apps, and infrastructure repos with clear responsibility boundaries
 # ============================================================================
 
 set -euo pipefail
@@ -13,7 +13,7 @@ IFS=$'\n\t'
 # ============================================================================
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
 PROJECT_ROOT="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-REPO_DIR="$(cd "$PROJECT_ROOT/.." && pwd)"
+REPO_DIR="$(cd "$PROJECT_ROOT/../.." && pwd)"
 DOMAIN="fkstrading.xyz"
 
 DOCKER_USERNAME="${DOCKER_USERNAME:-nuniesmith}"
@@ -38,12 +38,16 @@ GPU_SERVICES=(
 
 # CPU-only core business logic services
 CPU_CORE_SERVICES=(
-  api         # API Gateway (FastAPI)
-  app         # Trading logic & signals
-  data        # Central data service (single source of truth)
-  execution   # Order execution engine (Rust)
-  portfolio   # BTC-centric portfolio optimization
-  web         # Django web UI
+  api                # API Gateway (FastAPI)
+  app                # Trading logic & signals
+  data               # Central data service (single source of truth)
+  execution          # Order execution engine (Rust)
+  portfolio          # BTC-centric portfolio optimization
+  crypto             # Crypto signal generation and analysis
+  futures            # Futures trading service (CME Group futures contracts)
+  stocks             # Stocks trading service (equity market analysis)
+  data_ingestion     # Data ingestion service (stock, futures, news)
+  feature_engineering # Feature engineering service (112+ features)
 )
 
 # Combined core services (backward compat)
@@ -59,9 +63,9 @@ EXECUTION_PLUGINS=(
 INFRA_SERVICES=(
   analyze     # Codebase analysis & auto-improvement
   auth        # Rust-based auth (JWT/RBAC) – used by nginx + web
-  nginx       # Reverse proxy, TLS, auth integration
   monitor     # Prometheus + Grafana metrics aggregation
-  tailscale   # Zero-config VPN (Tailscale container)
+  nginx       # Reverse proxy, TLS, auth integration
+  #tailscale   # Zero-config VPN (Tailscale container)
 )
 
 # Main orchestrator (special – Rust + Kubernetes control)
@@ -70,23 +74,33 @@ ORCHESTRATOR=(
 )
 
 # Pure shared / read-only repos (never built as images)
+# Note: config is in services/config but treated as shared infrastructure
 SHARED_REPOS=(
-  actions     # GitHub Actions workflows
-  dev         # Dev tools / fks_dev repo
-  docker      # Base Dockerfiles + per-service overrides
-  config      # Helm charts, env files, shared YAMLs
-  docs        # Documentation
-  scripts     # Shared scripts
+  actions     # GitHub Actions workflows (infrastructure/actions)
+  dev         # Dev tools / fks_dev repo (infrastructure/dev)
+  docker      # Base Dockerfiles + per-service overrides (infrastructure/docker)
+  config      # Helm charts, env files, shared YAMLs (services/config)
+  docs        # Documentation (infrastructure/docs)
+  scripts     # Shared scripts (infrastructure/scripts)
+)
+
+# Mobile/Desktop applications (client apps)
+# Note: frontend may be in services/frontend but is treated as an app
+CLIENT_REPOS=(
+  android     # Android mobile app (Kotlin) - apps/android
+  apple       # iOS/macOS app (Swift/SwiftUI) - apps/apple
+  desktop     # Desktop app (Kotlin Multiplatform) - apps/desktop
+  web    # Web frontend (SvelteKit) - apps/frontend or services/frontend
 )
 
 # Composite arrays
 CPU_SERVICES=("${CPU_CORE_SERVICES[@]}" "${EXECUTION_PLUGINS[@]}" "${INFRA_SERVICES[@]}" "${ORCHESTRATOR[@]}")
 ALL_SERVICES=("${CPU_SERVICES[@]}" "${GPU_SERVICES[@]}")
-ALL_REPOS=("${ALL_SERVICES[@]}" "${SHARED_REPOS[@]}")
+ALL_REPOS=("${ALL_SERVICES[@]}" "${SHARED_REPOS[@]}" "${CLIENT_REPOS[@]}")
 
 # Language-specific
-PYTHON_SERVICES=(ai analyze api app data monitor ninja portfolio training web)
-RUST_SERVICES=(auth execution main)
+PYTHON_SERVICES=(ai analyze api app data monitor ninja portfolio training web crypto futures stocks data_ingestion feature_engineering)
+RUST_SERVICES=(auth execution main meta)
 
 # Backward compatibility (old scripts still work)
 SERVICES=("${ALL_SERVICES[@]}")
@@ -171,7 +185,7 @@ check_dependencies() {
   
   if [ ${#missing[@]} -gt 0 ]; then
     log_warning "Missing critical dependencies: ${missing[*]}"
-    log_info "Install them first or use option 1 (Install Tools)"
+    log_info "Install them first using infrastructure/dev/run.sh"
     return 1
   fi
   
@@ -305,28 +319,42 @@ validate_service() {
   fi
   
   # Fallback: validate by checking if service directory exists
-  # Calculate REPO_DIR if not set (for subshell contexts)
-  local repo_dir="${REPO_DIR:-}"
-  if [ -z "$repo_dir" ]; then
-    # Try to determine REPO_DIR from script location
-    local script_path
-    script_path=$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")
-    if [ -n "$script_path" ]; then
-      local project_root
-      project_root=$(cd "$(dirname "$script_path")" && pwd)
-      repo_dir=$(cd "$project_root/.." && pwd)
-    fi
-  fi
-  
-  if [ -n "$repo_dir" ]; then
-    local service_path="$repo_dir/$service"
-    if [ -d "$service_path" ]; then
-      return 0
-    fi
+  local service_path
+  service_path=$(get_service_path "$service")
+  if [ -n "$service_path" ] && [ -d "$service_path" ]; then
+    return 0
   fi
   
   # If we get here, validation failed
   log_error "Invalid service: $service"
+  return 1
+}
+
+validate_repo() {
+  local repo="$1"
+  local skip_validation="${2:-false}"
+  
+  # If validation is explicitly skipped
+  if [ "$skip_validation" = "true" ]; then
+    return 0
+  fi
+  
+  # First, try to validate using ALL_REPOS array if available and populated
+  if [ -n "${ALL_REPOS+x}" ] && [ ${#ALL_REPOS[@]} -gt 0 ]; then
+    if [[ " ${ALL_REPOS[*]} " =~ " ${repo} " ]]; then
+      return 0
+    fi
+  fi
+  
+  # Fallback: validate by checking if repo directory exists
+  local repo_path
+  repo_path=$(get_repo_path "$repo")
+  if [ -n "$repo_path" ] && [ -d "$repo_path" ]; then
+    return 0
+  fi
+  
+  # If we get here, validation failed
+  log_error "Invalid repo: $repo"
   return 1
 }
 
@@ -355,7 +383,7 @@ get_service_path() {
     if [ -n "$script_path" ]; then
       local project_root
       project_root=$(cd "$(dirname "$script_path")" && pwd)
-      repo_dir=$(cd "$project_root/.." && pwd)
+      repo_dir=$(cd "$project_root/../.." && pwd)
     fi
   fi
   
@@ -364,12 +392,67 @@ get_service_path() {
     return 1
   fi
   
-  echo "$repo_dir/$service"
+  # All services are directly in services/ directory
+  echo "$repo_dir/services/$service"
 }
 
 get_repo_path() {
   local repo="$1"
-  echo "$REPO_DIR/$repo"
+  local repo_dir="${REPO_DIR:-}"
+  
+  # If REPO_DIR not set, calculate it (for subshell contexts)
+  if [ -z "$repo_dir" ]; then
+    local script_path
+    script_path=$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")
+    if [ -n "$script_path" ]; then
+      local project_root
+      project_root=$(cd "$(dirname "$script_path")" && pwd)
+      repo_dir=$(cd "$project_root/../.." && pwd)
+    fi
+  fi
+  
+  if [ -z "$repo_dir" ]; then
+    echo ""  # Return empty if we can't determine path
+    return 1
+  fi
+  
+  # Determine repo type and return appropriate path
+  # Special case: config is in services/config but treated as shared
+  if [ "$repo" = "config" ]; then
+    echo "$repo_dir/services/config"
+    return 0
+  fi
+  
+  # Check if it's a service
+  if [[ " ${ALL_SERVICES[*]} " =~ " ${repo} " ]]; then
+    echo "$repo_dir/services/$repo"
+  # Check if it's an app
+  elif [[ " ${CLIENT_REPOS[*]} " =~ " ${repo} " ]]; then
+    # Special case: frontend might be in services/frontend
+    if [ "$repo" = "frontend" ]; then
+      if [ -d "$repo_dir/services/frontend" ]; then
+        echo "$repo_dir/services/frontend"
+      else
+        echo "$repo_dir/apps/frontend"
+      fi
+    else
+      echo "$repo_dir/apps/$repo"
+    fi
+  # Check if it's an infrastructure/shared repo
+  elif [[ " ${SHARED_REPOS[*]} " =~ " ${repo} " ]]; then
+    echo "$repo_dir/infrastructure/$repo"
+  else
+    # Default: try common locations
+    if [ -d "$repo_dir/services/$repo" ]; then
+      echo "$repo_dir/services/$repo"
+    elif [ -d "$repo_dir/apps/$repo" ]; then
+      echo "$repo_dir/apps/$repo"
+    elif [ -d "$repo_dir/infrastructure/$repo" ]; then
+      echo "$repo_dir/infrastructure/$repo"
+    else
+      echo "$repo_dir/$repo"
+    fi
+  fi
 }
 
 # ============================================================================
@@ -679,10 +762,10 @@ get_required_base_images() {
 }
 
 build_single_base_image() {
-  local base_type="$1"  # docker, docker-ml, or docker-gpu
+  local base_type="$1"  # docker, docker-ml, docker-gpu, or docker-rust
   local push_to_hub="${2:-false}"
 
-  local docker_dir="$REPO_DIR/docker"
+  local docker_dir="$REPO_DIR/infrastructure/docker/docker"
   if [ ! -d "$docker_dir" ]; then
     log_error "Docker directory not found: $docker_dir"
     return 1
@@ -691,48 +774,72 @@ build_single_base_image() {
   cd "$docker_dir"
 
   case "$base_type" in
-    docker)
-      log_info "Building CPU base image (docker)..."
+    docker|python-cpu-base)
+      log_info "Building Python CPU base image (docker)..."
       docker build -t "$DOCKER_USERNAME/$DOCKER_REPO:docker" -f Dockerfile.builder .
       docker tag "$DOCKER_USERNAME/$DOCKER_REPO:docker" \
+        "$DOCKER_USERNAME/$DOCKER_REPO:python-cpu-base" 2>/dev/null || true
+      docker tag "$DOCKER_USERNAME/$DOCKER_REPO:docker" \
         "$DOCKER_USERNAME/$DOCKER_REPO:docker-latest" 2>/dev/null || true
-      log_success "CPU base image built"
+      log_success "Python CPU base image built"
       scan_image "$DOCKER_USERNAME/$DOCKER_REPO:docker"
       if [ "$push_to_hub" = "true" ]; then
         docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker" || log_warning "Failed to push CPU base"
+        docker push "$DOCKER_USERNAME/$DOCKER_REPO:python-cpu-base" || log_warning "Failed to push CPU base (python-cpu-base tag)"
         docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-latest" || log_warning "Failed to push CPU base (latest tag)"
       fi
       ;;
-    docker-ml)
+    docker-ml|python-ml)
       if ! check_base_image "$DOCKER_USERNAME/$DOCKER_REPO:docker" "false"; then
         log_warning "CPU base image (docker) not found. Building it first..."
         build_single_base_image "docker" "false"
       fi
-      log_info "Building ML base image (docker-ml)..."
+      log_info "Building Python ML base image (docker-ml)..."
       docker build -t "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml" -f Dockerfile.ml .
       docker tag "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml" \
+        "$DOCKER_USERNAME/$DOCKER_REPO:python-ml" 2>/dev/null || true
+      docker tag "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml" \
         "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml-latest" 2>/dev/null || true
-      log_success "ML base image built"
+      log_success "Python ML base image built"
       scan_image "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml"
       if [ "$push_to_hub" = "true" ]; then
         docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml" || log_warning "Failed to push ML base"
+        docker push "$DOCKER_USERNAME/$DOCKER_REPO:python-ml" || log_warning "Failed to push ML base (python-ml tag)"
         docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml-latest" || log_warning "Failed to push ML base (latest tag)"
       fi
       ;;
-    docker-gpu)
+    docker-gpu|python-gpu)
       if ! check_base_image "$DOCKER_USERNAME/$DOCKER_REPO:docker-ml" "false"; then
         log_warning "ML base image (docker-ml) not found. Building it first..."
         build_single_base_image "docker-ml" "false"
       fi
-      log_info "Building GPU base image (docker-gpu)..."
+      log_info "Building Python GPU base image (docker-gpu)..."
       docker build -t "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu" -f Dockerfile.gpu .
       docker tag "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu" \
+        "$DOCKER_USERNAME/$DOCKER_REPO:python-gpu" 2>/dev/null || true
+      docker tag "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu" \
         "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu-latest" 2>/dev/null || true
-      log_success "GPU base image built"
+      log_success "Python GPU base image built"
       scan_image "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu"
       if [ "$push_to_hub" = "true" ]; then
         docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu" || log_warning "Failed to push GPU base"
+        docker push "$DOCKER_USERNAME/$DOCKER_REPO:python-gpu" || log_warning "Failed to push GPU base (python-gpu tag)"
         docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-gpu-latest" || log_warning "Failed to push GPU base (latest tag)"
+      fi
+      ;;
+    docker-rust|rust-cpu-base)
+      log_info "Building Rust CPU base image (docker-rust)..."
+      docker build -t "$DOCKER_USERNAME/$DOCKER_REPO:docker-rust" -f Dockerfile.rust .
+      docker tag "$DOCKER_USERNAME/$DOCKER_REPO:docker-rust" \
+        "$DOCKER_USERNAME/$DOCKER_REPO:rust-cpu-base" 2>/dev/null || true
+      docker tag "$DOCKER_USERNAME/$DOCKER_REPO:docker-rust" \
+        "$DOCKER_USERNAME/$DOCKER_REPO:docker-rust-latest" 2>/dev/null || true
+      log_success "Rust CPU base image built"
+      scan_image "$DOCKER_USERNAME/$DOCKER_REPO:docker-rust"
+      if [ "$push_to_hub" = "true" ]; then
+        docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-rust" || log_warning "Failed to push Rust base"
+        docker push "$DOCKER_USERNAME/$DOCKER_REPO:rust-cpu-base" || log_warning "Failed to push Rust base (rust-cpu-base tag)"
+        docker push "$DOCKER_USERNAME/$DOCKER_REPO:docker-rust-latest" || log_warning "Failed to push Rust base (latest tag)"
       fi
       ;;
     *)
@@ -745,7 +852,7 @@ build_single_base_image() {
 build_base_images() {
   local push_to_hub="${1:-false}"
 
-  local docker_dir="$REPO_DIR/docker"
+  local docker_dir="$REPO_DIR/infrastructure/docker/docker"
   if [ ! -d "$docker_dir" ]; then
     log_error "Docker directory not found: $docker_dir"
     return 1
@@ -775,6 +882,7 @@ build_base_images() {
   build_single_base_image "docker" "$push_to_hub"
   build_single_base_image "docker-ml" "$push_to_hub"
   build_single_base_image "docker-gpu" "$push_to_hub"
+  build_single_base_image "docker-rust" "$push_to_hub"
 
   log_success "All base images built successfully"
 }
@@ -803,13 +911,21 @@ build_docker() {
 
   local dockerfile="Dockerfile"
   if [ ! -f "$dockerfile" ]; then
-    local docker_dir="$REPO_DIR/docker"
-    if [ -f "$docker_dir/Dockerfile.$service" ]; then
-      dockerfile="$docker_dir/Dockerfile.$service"
-      log_info "Using Dockerfile from docker directory: $dockerfile"
+    # Check for docker/Dockerfile in service directory
+    if [ -f "docker/Dockerfile" ]; then
+      dockerfile="docker/Dockerfile"
+      log_info "Using Dockerfile from service docker directory: $dockerfile"
     else
-      log_warning "No Dockerfile found for $service - skipping build"
-      return 1
+      # Check for shared docker directory
+      local docker_dir="$REPO_DIR/docker"
+      if [ -f "$docker_dir/Dockerfile.$service" ]; then
+        dockerfile="$docker_dir/Dockerfile.$service"
+        log_info "Using Dockerfile from shared docker directory: $dockerfile"
+      else
+        log_warning "No Dockerfile found for $service - skipping build"
+        log_warning "Checked: ./Dockerfile, ./docker/Dockerfile, $docker_dir/Dockerfile.$service"
+        return 1
+      fi
     fi
   fi
 
@@ -836,9 +952,14 @@ build_docker() {
   local image_name="$DOCKER_USERNAME/$DOCKER_REPO:${service}-${tag}"
   log_info "Building Docker image: $image_name"
 
+  # Build with appropriate context and dockerfile path
   if [ "$dockerfile" = "Dockerfile" ]; then
     docker build -t "$image_name" .
+  elif [ "$dockerfile" = "docker/Dockerfile" ]; then
+    # Dockerfile is in docker/ subdirectory, build from service root
+    docker build -f "$dockerfile" -t "$image_name" .
   else
+    # Dockerfile is in shared location, build from service root
     docker build -f "$dockerfile" -t "$image_name" .
   fi
 
@@ -1004,12 +1125,300 @@ push_docker_image() {
 }
 
 # ============================================================================
+# HEALTH CHECK FUNCTIONS
+# ============================================================================
+
+# Load service registry for health checks and service discovery
+load_service_registry() {
+  local registry_file="$REPO_DIR/services/config/service_registry.json"
+  if [ ! -f "$registry_file" ]; then
+    log_warning "Service registry not found: $registry_file"
+    return 1
+  fi
+  
+  # Export registry path for use in other functions
+  export SERVICE_REGISTRY_FILE="$registry_file"
+  return 0
+}
+
+# Get service health URL from registry
+get_service_health_url() {
+  local service="$1"
+  local registry_file="${SERVICE_REGISTRY_FILE:-$REPO_DIR/services/config/service_registry.json}"
+  
+  if [ ! -f "$registry_file" ]; then
+    # Fallback: construct from service name
+    local port
+    case "$service" in
+      web) port="8000" ;;
+      api) port="8001" ;;
+      app) port="8002" ;;
+      data) port="8003" ;;
+      execution) port="8004" ;;
+      meta) port="8005" ;;
+      ninja) port="8006" ;;
+      ai) port="8007" ;;
+      analyze) port="8008" ;;
+      auth) port="8009" ;;
+      main) port="8010" ;;
+      training) port="8011" ;;
+      portfolio) port="8012" ;;
+      monitor) port="8013" ;;
+      crypto) port="8014" ;;
+      futures) port="8015" ;;
+      stocks) port="8016" ;;
+      data_ingestion) port="8020" ;;
+      feature_engineering) port="8021" ;;
+      *) port="8000" ;;
+    esac
+    echo "http://localhost:$port/health"
+    return 0
+  fi
+  
+  # Try to extract from JSON (requires jq or python)
+  if command -v jq &>/dev/null; then
+    local service_key="fks_${service}"
+    jq -r ".services.\"$service_key\".health_url // .services.\"$service_key\".base_url + \"/health\" // empty" "$registry_file" 2>/dev/null | \
+      sed "s|http://fks-|http://localhost:|g" | \
+      sed "s|http://fks_|http://localhost:|g" || echo ""
+  elif command -v python3 &>/dev/null; then
+    python3 -c "
+import json
+import sys
+try:
+    with open('$registry_file') as f:
+        reg = json.load(f)
+    svc_key = 'fks_${service}'
+    if svc_key in reg.get('services', {}):
+        health = reg['services'][svc_key].get('health_url', '')
+        if health:
+            print(health.replace('http://fks-', 'http://localhost:').replace('http://fks_', 'http://localhost:'))
+        else:
+            base = reg['services'][svc_key].get('base_url', '')
+            if base:
+                print(base.replace('http://fks-', 'http://localhost:').replace('http://fks_', 'http://localhost:') + '/health')
+except:
+    pass
+" 2>/dev/null || echo ""
+  else
+    echo ""
+  fi
+}
+
+# Check if a service is healthy
+check_service_health() {
+  local service="$1"
+  local timeout="${2:-5}"
+  local health_url
+  
+  health_url=$(get_service_health_url "$service")
+  if [ -z "$health_url" ]; then
+    log_warning "Could not determine health URL for $service"
+    return 1
+  fi
+  
+  if curl -sf --max-time "$timeout" "$health_url" >/dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Wait for service to become healthy
+wait_for_service_health() {
+  local service="$1"
+  local max_wait="${2:-60}"
+  local interval="${3:-2}"
+  local elapsed=0
+  
+  log_info "Waiting for $service to become healthy (max ${max_wait}s)..."
+  
+  while [ $elapsed -lt $max_wait ]; do
+    if check_service_health "$service" "$interval"; then
+      log_success "$service is healthy"
+      return 0
+    fi
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+    echo -n "."
+  done
+  
+  echo ""
+  log_error "$service did not become healthy within ${max_wait}s"
+  return 1
+}
+
+# Discover and ping all running FKS services
+discover_and_ping_services() {
+  local service="$1"
+  local registry_file="${SERVICE_REGISTRY_FILE:-$REPO_DIR/services/config/service_registry.json}"
+  
+  if [ ! -f "$registry_file" ]; then
+    log_warning "Service registry not found, skipping service discovery"
+    return 0
+  fi
+  
+  log_info "Discovering FKS services for $service..."
+  
+  # Get list of all services from registry
+  local all_services
+  if command -v jq &>/dev/null; then
+    all_services=$(jq -r '.services | keys[]' "$registry_file" 2>/dev/null | sed 's/fks_//' || echo "")
+  elif command -v python3 &>/dev/null; then
+    all_services=$(python3 -c "
+import json
+try:
+    with open('$registry_file') as f:
+        reg = json.load(f)
+    for key in reg.get('services', {}).keys():
+        print(key.replace('fks_', ''))
+except:
+    pass
+" 2>/dev/null || echo "")
+  else
+    # Fallback: use hardcoded list
+    all_services="web api app data execution meta ninja ai analyze auth main training portfolio monitor crypto futures stocks data_ingestion feature_engineering"
+  fi
+  
+  local healthy_count=0
+  local total_count=0
+  local healthy_services=()
+  local unhealthy_services=()
+  
+  for svc in $all_services; do
+    [ "$svc" = "$service" ] || [ "$service" = "all" ] || continue  # Skip self unless checking all
+    total_count=$((total_count + 1))
+    
+    if check_service_health "$svc" 2; then
+      healthy_count=$((healthy_count + 1))
+      healthy_services+=("$svc")
+      log_info "  ✓ $svc is healthy"
+    else
+      unhealthy_services+=("$svc")
+      log_info "  ✗ $svc is not responding"
+    fi
+  done
+  
+  log_info "Service discovery complete: $healthy_count/$total_count services healthy"
+  if [ ${#healthy_services[@]} -gt 0 ]; then
+    log_success "Healthy services: ${healthy_services[*]}"
+  fi
+  if [ ${#unhealthy_services[@]} -gt 0 ]; then
+    log_warning "Unhealthy/missing services: ${unhealthy_services[*]}"
+  fi
+  
+  return 0
+}
+
+# Background service discovery daemon (runs continuously)
+start_service_discovery_daemon() {
+  local interval="${1:-30}"  # Check every 30 seconds by default
+  local pid_file="/tmp/fks-service-discovery.pid"
+  
+  if [ -f "$pid_file" ]; then
+    local old_pid
+    old_pid=$(cat "$pid_file" 2>/dev/null || echo "")
+    if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+      log_info "Service discovery daemon already running (PID: $old_pid)"
+      return 0
+    fi
+    rm -f "$pid_file"
+  fi
+  
+  log_info "Starting service discovery daemon (checking every ${interval}s)..."
+  
+  (
+    while true; do
+      sleep "$interval"
+      load_service_registry >/dev/null 2>&1
+      discover_and_ping_services "all" >/dev/null 2>&1
+    done
+  ) &
+  
+  local daemon_pid=$!
+  echo "$daemon_pid" > "$pid_file"
+  log_success "Service discovery daemon started (PID: $daemon_pid)"
+  log_info "Daemon will continuously check service health every ${interval}s"
+  log_info "To stop: kill $daemon_pid or remove $pid_file"
+}
+
+# Stop service discovery daemon
+stop_service_discovery_daemon() {
+  local pid_file="/tmp/fks-service-discovery.pid"
+  
+  if [ ! -f "$pid_file" ]; then
+    log_info "Service discovery daemon not running"
+    return 0
+  fi
+  
+  local daemon_pid
+  daemon_pid=$(cat "$pid_file" 2>/dev/null || echo "")
+  
+  if [ -z "$daemon_pid" ]; then
+    log_warning "Could not read daemon PID"
+    rm -f "$pid_file"
+    return 1
+  fi
+  
+  if kill -0 "$daemon_pid" 2>/dev/null; then
+    kill "$daemon_pid" 2>/dev/null
+    log_success "Service discovery daemon stopped (PID: $daemon_pid)"
+  else
+    log_warning "Daemon process not found (may have already stopped)"
+  fi
+  
+  rm -f "$pid_file"
+  return 0
+}
+
+# ============================================================================
+# DOCKER NETWORK MANAGEMENT
+# ============================================================================
+
+# Ensure fks-network exists
+ensure_fks_network() {
+  # Check if network exists
+  if docker network inspect fks-network >/dev/null 2>&1; then
+    log_info "fks-network already exists"
+    return 0
+  fi
+  
+  # Network doesn't exist, create it
+  log_info "Creating fks-network Docker network..."
+  local create_output
+  create_output=$(docker network create fks-network 2>&1)
+  local create_status=$?
+  
+  if [ $create_status -eq 0 ]; then
+    log_success "fks-network created successfully"
+    return 0
+  else
+    # Check if it was created by another process (race condition)
+    if docker network inspect fks-network >/dev/null 2>&1; then
+      log_info "fks-network was created by another process"
+      return 0
+    else
+      log_error "Failed to create fks-network"
+      log_error "Error: $create_output"
+      return 1
+    fi
+  fi
+}
+
+# ============================================================================
 # SERVICE MANAGEMENT (Docker Compose)
 # ============================================================================
 
 start_service() {
   local service="$1"
+  local wait_health="${2:-true}"
   validate_service "$service" || return 1
+
+  # Ensure network exists before starting service - fail if we can't create it
+  if ! ensure_fks_network; then
+    log_error "Failed to ensure fks-network exists. Cannot start $service."
+    return 1
+  fi
 
   local service_path
   service_path=$(get_service_path "$service")
@@ -1026,8 +1435,22 @@ start_service() {
   fi
 
   log_info "Starting $service..."
-  docker compose up -d --build
-  log_success "$service started"
+  if docker compose up -d --build; then
+    log_success "$service started"
+    
+    # Wait for health check if requested
+    if [ "$wait_health" = "true" ]; then
+      wait_for_service_health "$service" 60 || log_warning "$service may not be fully ready"
+    fi
+    
+    # Discover and ping other services (non-blocking)
+    (discover_and_ping_services "$service" >/dev/null 2>&1 &)
+    
+    return 0
+  else
+    log_error "Failed to start $service"
+    return 1
+  fi
 }
 
 stop_service() {
@@ -1051,6 +1474,51 @@ stop_service() {
   log_info "Stopping $service..."
   docker compose down
   log_success "$service stopped"
+}
+
+# Start all services
+start_all_services() {
+  local wait_health="${1:-false}"
+  local services_to_start=("${ALL_SERVICES[@]}")
+  
+  log_info "Starting all FKS services..."
+  
+  # Ensure Docker network exists first
+  if ! ensure_fks_network; then
+    log_error "Failed to create fks-network. Cannot start services."
+    return 1
+  fi
+  
+  # Load service registry
+  load_service_registry || log_warning "Service registry not available"
+  
+  local started_count=0
+  local failed_services=()
+  
+  for service in "${services_to_start[@]}"; do
+    if start_service "$service" "$wait_health"; then
+      started_count=$((started_count + 1))
+    else
+      failed_services+=("$service")
+    fi
+  done
+  
+  echo ""
+  log_info "Started: $started_count/${#services_to_start[@]} services"
+  if [ ${#failed_services[@]} -gt 0 ]; then
+    log_warning "Failed to start: ${failed_services[*]}"
+    return 1
+  fi
+  
+  # Optional final health check summary (non-blocking)
+  if [ "$wait_health" = "true" ]; then
+    log_info "Performing final health check on all services..."
+    discover_and_ping_services "all"
+  else
+    log_info "Services started. Use option 13 to check health status."
+  fi
+  
+  return 0
 }
 
 # ============================================================================
@@ -1905,6 +2373,9 @@ OPTIONS:
   -P               Push all service images
   -s SERVICE       Start service (Docker Compose)
   -S SERVICE       Stop service (Docker Compose)
+  -A               Build all images and start all services (with health checks)
+  -H               Health check all services
+  -D [start|stop]  Service discovery daemon (start or stop)
   -c REPO          Commit and push repo
   -C [SCOPE]       Commit and push (SCOPE optional: core | services | all)
   -k start         Start Kubernetes deployment
@@ -1961,7 +2432,7 @@ parse_cli_args() {
   # Disable interactive mode for CLI
   INTERACTIVE=false
   
-  while getopts ":i:b:Ba:t:p:Ps:S:c:Ck:uv:wx:h" opt; do
+  while getopts ":i:b:Ba:t:p:Ps:S:AH:D:c:Ck:uv:wx:h" opt; do
     case $opt in
       i)
         install_tool="$OPTARG"
@@ -2078,6 +2549,36 @@ parse_cli_args() {
         check_workflows=true
         log_info "CLI mode: Checking GitHub Actions workflow status"
         check_workflow_status
+        ;;
+      A)
+        log_info "CLI mode: Building all images and starting all services"
+        # Ensure network exists before building/starting
+        if ! ensure_fks_network; then
+          log_error "Failed to create fks-network. Cannot proceed."
+          exit 1
+        fi
+        build_base_images "false"
+        build_all_services "$tag" "false"
+        start_all_services "true"
+        ;;
+      H)
+        log_info "CLI mode: Health checking all services"
+        load_service_registry || log_warning "Service registry not available"
+        discover_and_ping_services "all"
+        ;;
+      D)
+        local daemon_action="$OPTARG"
+        case "$daemon_action" in
+          start)
+            start_service_discovery_daemon 30
+            ;;
+          stop)
+            stop_service_discovery_daemon
+            ;;
+          *)
+            log_error "Invalid daemon action: $daemon_action. Use: start, stop"
+            ;;
+        esac
         ;;
       x)
         # Optional scope argument
@@ -2528,11 +3029,12 @@ show_menu() {
   echo "GPU Services      : ${#GPU_SERVICES[@]}   (ai, training)"
   echo "Shared Repos      : ${#SHARED_REPOS[@]}   (docker, config, docs, actions)"
   echo
-  echo "1. Install Tools            2. Build Base Images       3. Build Services"
+  echo "1. Build All & Start All    2. Build Base Images       3. Build Services"
   echo "4. Start Services           5. Stop Services           6. Deploy to Kubernetes"
   echo "7. Manage Python Venvs      8. Commit & Push           9. Analyze Codebase"
   echo "10. Check GitHub Actions   11. Sync/Pull Images       12. Clear GH Caches"
-  echo "13. Exit"
+  echo "13. Health Check All         14. Service Discovery Daemon"
+  echo "15. Exit"
   echo
   read -p "Choose option: " choice
 }
@@ -2554,7 +3056,33 @@ main() {
 
     case $choice in
       1)
-        install_all_tools
+        log_info "Building all images and starting all services..."
+        local tag="$DEFAULT_TAG"
+        if [ "${INTERACTIVE:-true}" = "true" ]; then
+          read -p "Enter image tag (default: latest): " tag
+          tag=${tag:-latest}
+        fi
+        
+        # Ensure Docker network exists first
+        log_info "Step 0: Ensuring Docker network exists..."
+        if ! ensure_fks_network; then
+          log_error "Failed to create fks-network. Cannot proceed."
+          continue
+        fi
+        
+        # Build base images first
+        log_info "Step 1: Building base images..."
+        build_base_images "false"
+        
+        # Build all service images
+        log_info "Step 2: Building all service images..."
+        build_all_services "$tag" "false"
+        
+        # Start all services (without waiting for health checks)
+        log_info "Step 3: Starting all services..."
+        start_all_services "false"
+        
+        log_success "All services built and started!"
         ;;
       2)
         local push_bases="n"
@@ -2604,10 +3132,8 @@ main() {
             done
             ;;
           a)
-            log_info "Starting all services..."
-            for service in "${SERVICES[@]}"; do
-              start_service "$service" || log_warning "Failed to start $service"
-            done
+            log_info "Starting all services with health checks..."
+            start_all_services "true"
             ;;
           s)
             read -p "Enter service name (comma-separated): " input_services
@@ -2751,7 +3277,44 @@ main() {
         esac
         ;;
       13)
-        log_success "Goodbye!"
+        log_info "Checking health of all FKS services..."
+        load_service_registry || log_warning "Service registry not available"
+        discover_and_ping_services "all"
+        ;;
+      14)
+        read -p "Service Discovery: [s]tart, [S]top, or [c]heck status? [s]: " daemon_action
+        daemon_action=${daemon_action:-s}
+        case "$daemon_action" in
+          s|start)
+            read -p "Check interval in seconds (default: 30): " interval
+            interval=${interval:-30}
+            start_service_discovery_daemon "$interval"
+            ;;
+          S|stop)
+            stop_service_discovery_daemon
+            ;;
+          c|check|status)
+            local pid_file="/tmp/fks-service-discovery.pid"
+            if [ -f "$pid_file" ]; then
+              local daemon_pid
+              daemon_pid=$(cat "$pid_file" 2>/dev/null || echo "")
+              if [ -n "$daemon_pid" ] && kill -0 "$daemon_pid" 2>/dev/null; then
+                log_success "Service discovery daemon is running (PID: $daemon_pid)"
+              else
+                log_warning "Service discovery daemon PID file exists but process not running"
+                rm -f "$pid_file"
+              fi
+            else
+              log_info "Service discovery daemon is not running"
+            fi
+            ;;
+          *)
+            log_error "Invalid action"
+            ;;
+        esac
+        ;;
+      15)
+        log_info "Exiting..."
         exit 0
         ;;
       *)

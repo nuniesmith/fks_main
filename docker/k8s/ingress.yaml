@@ -23,8 +23,8 @@ spec:
   - host: fkstrading.xyz
     http:
       paths:
-      # Web service (Django Web Interface) - Root path
-      # Includes signal dashboard at /signals/dashboard/ and /signals/api/
+  # Web service (Django Web Interface) - Root path
+  # Includes signal dashboard at /signals/dashboard/ and /signals/api/
       - path: /()(.*)
         pathType: ImplementationSpecific
         backend:
@@ -347,7 +347,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: kubernetes-dashboard
+            name: kubernetes-dashboard-proxy
             port:
               number: 80
   

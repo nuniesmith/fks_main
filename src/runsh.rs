@@ -41,15 +41,15 @@ impl RunShExecutor {
             .or_else(|| std::env::var("RUNSH_PATH").ok().map(PathBuf::from))
             .unwrap_or(default_path);
 
-        // Canonicalize path for security
-        let runsh_path = runsh_path
-            .canonicalize()
-            .map_err(|e| anyhow::anyhow!("Failed to resolve run.sh path: {}", e))?;
-
-        // Verify the file exists and is executable
+        // Check if file exists before canonicalizing
         if !runsh_path.exists() {
             return Err(anyhow::anyhow!("run.sh not found at: {:?}", runsh_path));
         }
+
+        // Canonicalize path for security (only if file exists)
+        let runsh_path = runsh_path
+            .canonicalize()
+            .map_err(|e| anyhow::anyhow!("Failed to resolve run.sh path: {}", e))?;
 
         // Define allowed commands (menu options from run.sh - refactored version)
         // Note: Option 12 (Exit) is not included as it's not executable

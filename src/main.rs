@@ -15,11 +15,18 @@ use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
 use tracing::{info, error, warn};
 
+mod cli;
 mod config;
 mod k8s;
+mod metrics;
 mod monitor;
+mod preflight;
 mod runsh;
+mod test_cmd;
+mod web_ui;
 
+use clap::Parser;
+use cli::{Cli, Commands};
 use config::AppConfig;
 use monitor::MonitorClient;
 use runsh::RunShExecutor;
@@ -45,8 +52,90 @@ struct ServiceInfo {
     last_updated: String,
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn main() {
+    // Parse CLI arguments
+    let cli = Cli::parse();
+    
+    // If a CLI command is provided, execute it and exit
+    if let Some(command) = cli.command {
+        let rt = match tokio::runtime::Runtime::new() {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("ERROR: Failed to create tokio runtime: {:?}", e);
+                std::process::exit(1);
+            }
+        };
+        
+        let exit_code = match rt.block_on(handle_cli_command(command)) {
+            Ok(_) => 0,
+            Err(e) => {
+                eprintln!("ERROR: {}", e);
+                1
+            }
+        };
+        std::process::exit(exit_code);
+    }
+    
+    // Otherwise, run as web server (original behavior)
+    // Immediate output BEFORE any async code
+    eprintln!("=== FKS Main Binary Started (SYNC) ===");
+    eprintln!("RUST_LOG: {:?}", std::env::var("RUST_LOG"));
+    std::io::Write::flush(&mut std::io::stderr()).unwrap();
+    
+    // Set up panic hook BEFORE tokio runtime
+    // Panic hook already set in main()
+    
+    eprintln!("=== Panic hook set, starting tokio runtime ===");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap();
+    
+    // Now start tokio runtime
+    eprintln!("=== Creating tokio runtime ===");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap();
+    
+    let rt = match tokio::runtime::Runtime::new() {
+        Ok(r) => {
+            eprintln!("=== Tokio runtime created successfully ===");
+            std::io::Write::flush(&mut std::io::stderr()).unwrap();
+            r
+        }
+        Err(e) => {
+            eprintln!("=== ERROR: Failed to create tokio runtime: {:?} ===", e);
+            std::io::Write::flush(&mut std::io::stderr()).unwrap();
+            std::process::exit(1);
+        }
+    };
+    
+    eprintln!("=== Blocking on async_main ===");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap();
+    
+    match rt.block_on(async_main()) {
+        Ok(_) => {
+            eprintln!("=== async_main completed successfully ===");
+            std::io::Write::flush(&mut std::io::stderr()).unwrap();
+        }
+        Err(e) => {
+            eprintln!("=== ERROR: async_main failed: {:?} ===", e);
+            std::io::Write::flush(&mut std::io::stderr()).unwrap();
+            std::process::exit(1);
+        }
+    }
+}
+
+async fn handle_cli_command(command: Commands) -> anyhow::Result<()> {
+    match command {
+        Commands::Preflight { full } => {
+            preflight::run_preflight(full).await
+        }
+        Commands::Test { service, parallel, coverage } => {
+            test_cmd::run_tests(service, parallel, coverage).await
+        }
+    }
+}
+
+async fn async_main() -> anyhow::Result<()> {
+    eprintln!("=== Inside async_main ===");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap();
+    
     // Set up panic hook to capture panics
     std::panic::set_hook(Box::new(|panic_info| {
         eprintln!("PANIC: {}", panic_info);
@@ -178,6 +267,10 @@ async fn main() -> anyhow::Result<()> {
     // Build router
     let _ = std::io::stderr().write_all(b"Building router...\n");
     let _ = std::io::stderr().flush();
+    
+    // Set up Prometheus metrics
+    let (prometheus_layer, metric_handle) = metrics::setup_prometheus_metrics("fks_main", "1.0.0");
+    
     let app = Router::new()
         .route("/", get(root))
         .route("/health", get(health))
@@ -192,6 +285,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/v1/k8s/deployments", get(list_deployments))
         .route("/api/v1/runsh/commands", get(list_runsh_commands))
         .route("/api/v1/runsh/execute", post(execute_runsh_command))
+        .route("/metrics", get(|| async move { metric_handle.render() }));
+    
+    // Add web UI routes
+    let app = web_ui::add_web_ui_routes(app);
+    
+    let app = app
+        .layer(prometheus_layer)
         .layer(CorsLayer::permissive())
         .with_state(app_state);
     let _ = std::io::stderr().write_all(b"Router built\n");

@@ -3,7 +3,7 @@ services:
   fks-main:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
     image: nuniesmith/fks:main-latest
     container_name: fks-main
     ports:
@@ -41,31 +41,8 @@ services:
         max-file: "3"
         compress: "true"
 
-  fks-monitor:
-    image: nuniesmith/fks:monitor-latest
-    container_name: fks-monitor
-    ports:
-      - "8013:8013"
-    volumes:
-      # Mount central config and monitor config
-      - ./config:/app/config:ro
-      - ./monitor/config:/app/config:ro
-    environment:
-      - MONITOR_PORT=8013
-      - FKS_CONFIG_PATH=/app/config/services/fks_monitor.yaml
-      - PROMETHEUS_URL=http://prometheus:9090
-      - GRAFANA_URL=http://grafana:3000
-      # Logs stored inside container at /app/logs (not mounted externally)
-      # Access via: docker logs fks-monitor
-    networks:
-      - fks-network
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-        compress: "true"
+  # Note: fks-monitor is managed separately by the monitor service
+  # Remove this duplicate definition to avoid container name conflicts
 
 networks:
   fks-network:

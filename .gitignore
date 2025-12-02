@@ -319,3 +319,4 @@ nginx/ssl/fkstrading.xyz.key
 # Large test output files
 k8s/tests/load-test-output.txt
 **/load-test-output.txt
+.cursor

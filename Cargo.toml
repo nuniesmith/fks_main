@@ -40,8 +40,18 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter", "json"] }
 anyhow = "1.0.100"
 thiserror = "2.0.17"
 
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Colored output
+colored = "2.1"
+
 # Async utilities
 futures = "0.3.31"
+
+# Prometheus metrics
+axum-prometheus = "0.5.1"
+prometheus = "0.13.3"
 
 # Time
 chrono = { version = "0.4.42", features = ["serde"] }
@@ -55,4 +65,8 @@ tokio-test = "0.4.4"
 [[bin]]
 name = "fks_main"
 path = "src/main.rs"
+
+[[bin]]
+name = "test_main"
+path = "src/test_main.rs"
 

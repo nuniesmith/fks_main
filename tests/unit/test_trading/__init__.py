@@ -1,1 +1,0 @@
-"""Trading component unit tests."""

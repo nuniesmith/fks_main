@@ -1,6 +1,6 @@
 # FKS Main Orchestration Service
 
-Rust-based API service for Kubernetes orchestration and centralized control of all FKS services.
+**Rust-only** API service for Kubernetes orchestration and centralized control of all FKS services and infrastructure.
 
 ## 🎯 Purpose
 
@@ -9,6 +9,7 @@ Rust-based API service for Kubernetes orchestration and centralized control of a
 - **Service Management**: Unified API for managing all FKS services
 - **Monitor Integration**: Consumes `fks_monitor` for health/metrics/test data
 - **Infrastructure Control**: Full control of K8s environment for production
+- **Stable Web UI**: Lightweight HTML interface separate from `fks_web` (available even when `fks_web` restarts)
 
 ## 🏗️ Architecture
 
@@ -71,6 +72,11 @@ docker run -p 8010:8010 \
 ### Aggregated Views
 
 - `GET /api/v1/summary` - System summary (from monitor)
+
+### Web Interface
+
+- `GET /ui` - Simple web dashboard (stable interface, separate from fks_web)
+- `GET /ui/api/status` - API status JSON for web UI
 
 ## 🔧 Configuration
 
@@ -136,6 +142,8 @@ docker run -p 8010:8010 \
 - Deployment controls
 - Health monitoring
 
+**Note**: `fks_main` also includes a simple web UI (`/ui`) that remains available even when `fks_web` is restarting, providing a stable control interface for infrastructure management.
+
 ## ☸️ Kubernetes
 
 ### Deployment
@@ -172,11 +180,22 @@ The service requires a Kubernetes service account with permissions to:
 - Scale deployments
 - Restart deployments
 
+## 🧪 Testing
+
+```bash
+# Run Rust tests
+cargo test
+
+# Run integration tests
+cargo test --test integration_test
+```
+
 ## 📚 Documentation
 
 - [API Documentation](docs/API.md)
 - [Kubernetes Integration](docs/K8S.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+- [Cleanup Plan](CLEANUP_PLAN.md) - Details on the Rust-only migration
 
 ## 🔗 Integration
 
@@ -211,8 +230,21 @@ The service requires a Kubernetes service account with permissions to:
 - Kubernetes event tracking
 - Monitor API interactions
 
+## 🏗️ Architecture Notes
+
+This service is **Rust-only** and focused on:
+- Platform orchestration and control
+- Infrastructure management
+- Service coordination
+
+**Moved to other services:**
+- Django/Python code → `fks_web`
+- Signal processing → `fks_portfolio`
+- ML/AI code → `fks_ai` / `fks_training`
+- Notebooks → `fks_training`
+
 ---
 
 **Repository**: [nuniesmith/fks_main](https://github.com/nuniesmith/fks_main)  
 **Docker Image**: `nuniesmith/fks:main-latest`  
-**Status**: Active
+**Status**: Active | **Language**: Rust only

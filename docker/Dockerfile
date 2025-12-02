@@ -13,24 +13,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy Cargo files first (for better dependency caching)
 COPY Cargo.toml Cargo.lock* ./
 
-# Create a dummy source to build dependencies (better caching)
-# This allows Docker to cache the dependency layer separately from source code
-# Use cache mounts so dependencies are cached for the real build
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/app/target \
-    mkdir src && \
-    echo "fn main() {}" > src/main.rs && \
-    cargo build --release && \
-    rm -rf src
-
-# Copy actual source code
+# Copy actual source code FIRST
 COPY src/ ./src/
 
 # Build the application with BuildKit cache mount for Cargo registry
-# Dependencies are already cached from the dummy build above
+# This will build dependencies on first run, then use cache on subsequent builds
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
-    cargo build --release && \
+    cargo build --release --bin fks_main && \
     cp target/release/fks_main /app/fks_main
 
 # Runtime stage
@@ -51,8 +41,12 @@ RUN useradd -u 1000 -m -s /bin/bash appuser
 # Copy binary from builder with correct ownership
 COPY --from=builder --chown=appuser:appuser /app/fks_main /app/fks_main
 
+# Copy entrypoint script
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Verify binary exists and is executable
-RUN ls -la /app/fks_main && file /app/fks_main || echo "Binary check failed"
+RUN ls -la /app/fks_main || echo "Binary check failed"
 
 # Environment variables
 ENV SERVICE_NAME=fks_main \
@@ -69,6 +63,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 # Expose port
 EXPOSE 8010
 
-# Run service with explicit path and error handling
-CMD ["/app/fks_main"]
+# Use entrypoint script for better error handling
+ENTRYPOINT ["/entrypoint.sh"]
 
