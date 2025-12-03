@@ -40,9 +40,11 @@ use std::env;
 ///     .layer(prometheus_layer);
 /// ```
 pub fn setup_prometheus_metrics(
-    service_name: &str,
-    version: &str,
+    service_name: impl Into<String>,
+    version: impl Into<String>,
 ) -> (PrometheusMetricLayer, MetricHandle) {
+    let service_name: String = service_name.into();
+    let version: String = version.into();
     // Create Prometheus metric layer for HTTP metrics
     let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
 
@@ -63,8 +65,8 @@ pub fn setup_prometheus_metrics(
             "fks_build_info",
             "Build information for FKS service"
         )
-        .const_label("service", service_name)
-        .const_label("version", version)
+        .const_label("service", &service_name)
+        .const_label("version", &version)
         .const_label("commit", &commit[..commit.len().min(8)])
         .const_label("build_date", &build_date),
     )
@@ -80,15 +82,20 @@ pub fn setup_prometheus_metrics(
         &["service"],
     )
     .expect("Failed to create service_health metric");
-    service_health.with_label_values(&[service_name]).set(1);
+    service_health.with_label_values(&[&service_name]).set(1);
     registry
         .register(Box::new(service_health))
         .expect("Failed to register service_health metric");
 
     // Create metric handle that includes custom metrics
+    // Store render closure since MetricHandle type is not exported
+    let render_closure = {
+        let handle = metric_handle;
+        Box::new(move || handle.render()) as Box<dyn Fn() -> String + Send + Sync>
+    };
     let handle = MetricHandle {
         registry,
-        axum_handle: metric_handle,
+        render_fn: render_closure,
     };
 
     (prometheus_layer, handle)
@@ -99,7 +106,7 @@ pub fn setup_prometheus_metrics(
 /// Combines axum-prometheus metrics with custom FKS metrics.
 pub struct MetricHandle {
     registry: Registry,
-    axum_handle: axum_prometheus::MetricHandle,
+    render_fn: Box<dyn Fn() -> String + Send + Sync>,
 }
 
 impl MetricHandle {
@@ -108,7 +115,7 @@ impl MetricHandle {
         let mut output = String::new();
 
         // Render axum-prometheus metrics (HTTP metrics)
-        output.push_str(&self.axum_handle.render());
+        output.push_str(&(self.render_fn)());
 
         // Render custom FKS metrics (build info, service health)
         let encoder = TextEncoder::new();

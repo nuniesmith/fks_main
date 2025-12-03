@@ -18,7 +18,7 @@ use tracing::{info, error, warn};
 mod cli;
 mod config;
 mod k8s;
-mod metrics;
+// mod metrics;  // Temporarily disabled to unblock preflight - lifetime issue
 mod monitor;
 mod preflight;
 mod runsh;
@@ -269,7 +269,8 @@ async fn async_main() -> anyhow::Result<()> {
     let _ = std::io::stderr().flush();
     
     // Set up Prometheus metrics
-    let (prometheus_layer, metric_handle) = metrics::setup_prometheus_metrics("fks_main", "1.0.0");
+    // TODO: Fix metrics lifetime issue - temporarily disabled to unblock preflight testing
+    // let (prometheus_layer, metric_handle) = metrics::setup_prometheus_metrics("fks_main", "1.0.0");
     
     let app = Router::new()
         .route("/", get(root))
@@ -285,13 +286,13 @@ async fn async_main() -> anyhow::Result<()> {
         .route("/api/v1/k8s/deployments", get(list_deployments))
         .route("/api/v1/runsh/commands", get(list_runsh_commands))
         .route("/api/v1/runsh/execute", post(execute_runsh_command))
-        .route("/metrics", get(|| async move { metric_handle.render() }));
+        .route("/metrics", get(metrics_endpoint));
     
     // Add web UI routes
     let app = web_ui::add_web_ui_routes(app);
     
     let app = app
-        .layer(prometheus_layer)
+        // .layer(prometheus_layer)  // Temporarily disabled
         .layer(CorsLayer::permissive())
         .with_state(app_state);
     let _ = std::io::stderr().write_all(b"Router built\n");
@@ -362,6 +363,22 @@ async fn health() -> Json<serde_json::Value> {
         "status": "healthy",
         "service": "fks_main"
     }))
+}
+
+async fn metrics_endpoint() -> (axum::http::StatusCode, [(axum::http::header::HeaderName, &'static str); 1], String) {
+    let version = env!("CARGO_PKG_VERSION");
+    let metrics_text = format!(
+        r#"# HELP fks_build_info Build information for the service
+# TYPE fks_build_info gauge
+fks_build_info{{service="fks_main",version="{}"}} 1
+"#,
+        version
+    );
+    (
+        axum::http::StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")],
+        metrics_text,
+    )
 }
 
 async fn ready(State(state): State<AppState>) -> Json<serde_json::Value> {

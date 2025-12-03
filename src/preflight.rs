@@ -17,6 +17,50 @@ struct CheckResult {
     duration_ms: u64,
 }
 
+/// Convert Docker internal URL to localhost URL for pre-flight checks
+fn docker_url_to_localhost(url: &str) -> String {
+    // Pattern: http://fks-<service>:<port>/path
+    // Convert to: http://localhost:<port>/path
+    
+    // Handle special port mappings first
+    if url.starts_with("http://fks-web:3001") {
+        return url.replace("http://fks-web:3001", "http://localhost:8000");
+    }
+    if url.starts_with("http://fks-analyze:8008") {
+        return url.replace("http://fks-analyze:8008", "http://localhost:8081");
+    }
+    
+    // Generic conversion: find the port number and path, reconstruct with localhost
+    if url.starts_with("http://fks-") {
+        // Find the colon before the port (after service name)
+        // URL: http://fks-api:8001/health
+        //      ^               ^    ^
+        //      |               |    path starts here
+        //      |               port starts here
+        //      service name ends here
+        
+        if let Some(service_end) = url[11..].find(':') {
+            // service_end is relative to position 11 (after "http://fks-")
+            let port_colon_pos = 11 + service_end;
+            let port_start = port_colon_pos + 1;
+            
+            // Find path separator
+            if let Some(path_start) = url[port_start..].find('/') {
+                let port = &url[port_start..port_start + path_start];
+                let path = &url[port_start + path_start..];
+                return format!("http://localhost:{}{}", port, path);
+            } else {
+                // No path, just port
+                let port = &url[port_start..];
+                return format!("http://localhost:{}", port);
+            }
+        }
+    }
+    
+    // Fallback: return as-is if we can't parse it
+    url.to_string()
+}
+
 /// Run all pre-flight checks
 pub async fn run_preflight(full: bool) -> Result<()> {
     println!("\n{} FKS Platform Pre-Flight Check\n", "🔍".bright_cyan());
@@ -245,11 +289,11 @@ async fn check_infrastructure_containers() -> CheckResult {
     let check_num = 4;
     
     let required_containers = vec![
-        "fks_web_db",
-        "fks_auth_db",
-        "fks_data_db",
-        "fks_web_redis",
-        "fks_data_redis",
+        "fks-web-db",
+        "fks-auth-db",
+        "fks-data-db",
+        "fks-web-redis",
+        "fks-data-redis",
     ];
     
     let output = Command::new("docker")
@@ -491,17 +535,11 @@ async fn check_service_health(_full: bool) -> CheckResult {
         for (name, service) in services {
             if let Some(health_url) = service.get("health_url").and_then(|v| v.as_str()) {
                 // Convert Docker internal URLs to localhost for pre-flight
-                let local_url = health_url
-                    .replace("http://fks-", "http://localhost:")
-                    .replace(":3001", ":8000") // fks_web port mapping
-                    .replace(":8081", ":8008"); // fks_analyze port mapping
+                let local_url = docker_url_to_localhost(health_url);
                 health_checks.push((name.clone(), local_url));
             } else if let Some(base_url) = service.get("base_url").and_then(|v| v.as_str()) {
                 // Fallback: construct health URL from base_url
-                let local_url = base_url
-                    .replace("http://fks-", "http://localhost:")
-                    .replace(":3001", ":8000")
-                    .replace(":8081", ":8008");
+                let local_url = docker_url_to_localhost(base_url);
                 health_checks.push((name.clone(), format!("{}/health", local_url)));
             }
         }
@@ -732,10 +770,7 @@ async fn check_metrics_endpoints() -> CheckResult {
             
             if let Some(url) = metrics_url {
                 // Convert Docker internal URLs to localhost for pre-flight
-                let local_url = url
-                    .replace("http://fks-", "http://localhost:")
-                    .replace(":3001", ":8000") // fks_web port mapping
-                    .replace(":8081", ":8008"); // fks_analyze port mapping
+                let local_url = docker_url_to_localhost(&url);
                 metrics_checks.push((name.clone(), local_url));
             }
         }
@@ -843,9 +878,13 @@ async fn check_metrics_endpoints() -> CheckResult {
 async fn load_service_registry() -> Result<Value> {
     // Try multiple possible paths
     let possible_paths = vec![
+        "infrastructure/config/service_registry.json",
+        "../infrastructure/config/service_registry.json",
+        "../../infrastructure/config/service_registry.json",
         "services/config/service_registry.json",
         "../services/config/service_registry.json",
         "../../services/config/service_registry.json",
+        "/app/infrastructure/config/service_registry.json",
         "/app/services/config/service_registry.json",
     ];
     
